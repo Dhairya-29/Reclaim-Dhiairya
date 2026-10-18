@@ -1,0 +1,16 @@
+# Render blueprint for the Reclaim API (render.com → New → Blueprint → pick this repo).
+services:
+  - type: web
+    name: reclaim-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: ANTHROPIC_API_KEY
+        sync: false # Render asks you for this; it never goes in the repo
+      - key: ALLOWED_ORIGINS
+        sync: false # your Netlify address, e.g. https://reclaim-app.netlify.app

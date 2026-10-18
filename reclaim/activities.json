@@ -1,0 +1,1546 @@
+{
+ "topics": [
+  [
+   "creative",
+   "Creative"
+  ],
+  [
+   "outdoors",
+   "Outdoors"
+  ],
+  [
+   "social",
+   "People"
+  ],
+  [
+   "learning",
+   "Learning"
+  ],
+  [
+   "mindful",
+   "Calm"
+  ],
+  [
+   "active",
+   "Movement"
+  ],
+  [
+   "cooking",
+   "Cooking"
+  ],
+  [
+   "music",
+   "Music"
+  ],
+  [
+   "community",
+   "Community"
+  ],
+  [
+   "home",
+   "Home & DIY"
+  ],
+  [
+   "play",
+   "Games & play"
+  ],
+  [
+   "selfcare",
+   "Self-care"
+  ],
+  [
+   "explore",
+   "Explore"
+  ]
+ ],
+ "activities": [
+  {
+   "id": "a1",
+   "title": "Walk without headphones",
+   "cat": "outdoors",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "A slow loop around the block with nothing in your ears.",
+   "why": "Gives your mind room to wander — the place good ideas show up.",
+   "steps": [
+    "Leave your phone in your pocket",
+    "Notice three sounds you usually miss",
+    "Take the long way back"
+   ]
+  },
+  {
+   "id": "a2",
+   "title": "Call someone for ten minutes",
+   "cat": "social",
+   "dur": 10,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Pick one person you have not spoken to in a while and just say hi.",
+   "why": "A short, real conversation does more than an hour of feeds.",
+   "steps": [
+    "Pick one name",
+    "Open with “I was just thinking about you”",
+    "Ask one question about their week"
+   ]
+  },
+  {
+   "id": "a3",
+   "title": "Cook something with one new ingredient",
+   "cat": "cooking",
+   "dur": 45,
+   "cost": 1,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Make a familiar dish, but swap in one thing you have never used.",
+   "why": "Small novelty, a real result you can taste.",
+   "steps": [
+    "Choose a dish you know",
+    "Pick one new spice, herb or vegetable",
+    "Write down how it turned out"
+   ]
+  },
+  {
+   "id": "a4",
+   "title": "Sketch what is in front of you",
+   "cat": "creative",
+   "dur": 15,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Pen, paper, one object. No erasing.",
+   "why": "Drawing forces you to actually look — the opposite of scrolling.",
+   "steps": [
+    "Grab any pen and paper",
+    "Pick an ordinary object",
+    "Draw it for ten minutes without erasing"
+   ]
+  },
+  {
+   "id": "a5",
+   "title": "Read one chapter on paper",
+   "cat": "learning",
+   "dur": 30,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "A physical book, a comfortable chair, one chapter.",
+   "why": "Deep attention is a muscle; this is the gentle workout.",
+   "steps": [
+    "Put your phone in another room",
+    "Read one chapter",
+    "Note one line worth remembering"
+   ]
+  },
+  {
+   "id": "a6",
+   "title": "Bodyweight session",
+   "cat": "active",
+   "dur": 20,
+   "cost": 0,
+   "energy": 3,
+   "setting": "indoor",
+   "desc": "Squats, push-ups, a plank. Three rounds.",
+   "why": "Burns restless energy fast and leaves you clearer.",
+   "steps": [
+    "10 squats",
+    "8 push-ups (knees are fine)",
+    "30-second plank — repeat 3 times"
+   ]
+  },
+  {
+   "id": "a7",
+   "title": "Visit a place you have never been",
+   "cat": "outdoors",
+   "dur": 60,
+   "cost": 1,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "A café, park, or shop within 20 minutes that you keep passing.",
+   "why": "New places make time feel fuller — and more memorable.",
+   "steps": [
+    "Pick somewhere within 20 minutes",
+    "Go without checking reviews",
+    "Take one photo worth keeping"
+   ]
+  },
+  {
+   "id": "a8",
+   "title": "Write a letter to a friend",
+   "cat": "social",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Handwritten or typed — one page about what you appreciate in them.",
+   "why": "Gratitude shared lands twice: once for them, once for you.",
+   "steps": [
+    "Pick a friend",
+    "Write three things you value about them",
+    "Send it, or give it in person"
+   ]
+  },
+  {
+   "id": "a9",
+   "title": "Learn three words in a new language",
+   "cat": "learning",
+   "dur": 15,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Pick a language you are curious about and learn three useful words.",
+   "why": "Tiny, finishable learning with a real sense of progress.",
+   "steps": [
+    "Choose a language",
+    "Learn hello, thank you, and one favourite word",
+    "Use one of them today"
+   ]
+  },
+  {
+   "id": "a10",
+   "title": "Five-minute room reset",
+   "cat": "mindful",
+   "dur": 5,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Clear one surface completely. Only one.",
+   "why": "A visible win in five minutes — a calm reset for your head too.",
+   "steps": [
+    "Pick one surface",
+    "Remove everything",
+    "Put back only what belongs"
+   ]
+  },
+  {
+   "id": "a11",
+   "title": "Play an instrument or hum a song",
+   "cat": "creative",
+   "dur": 15,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Any instrument, or just your voice. Learn eight bars of something.",
+   "why": "Making sound is more absorbing than consuming it.",
+   "steps": [
+    "Pick a song you love",
+    "Learn the first eight bars",
+    "Play it through three times"
+   ]
+  },
+  {
+   "id": "a12",
+   "title": "Sit outside and watch the sky",
+   "cat": "mindful",
+   "dur": 10,
+   "cost": 0,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "Ten minutes, no phone, just clouds or stars.",
+   "why": "Low effort, high calm — good when you feel drained.",
+   "steps": [
+    "Find somewhere to sit",
+    "Look up",
+    "Count slow breaths until you lose track"
+   ]
+  },
+  {
+   "id": "a13",
+   "title": "Invite someone for chai or coffee",
+   "cat": "social",
+   "dur": 45,
+   "cost": 1,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Message one person and suggest a specific time this week.",
+   "why": "Plans with a time attached actually happen.",
+   "steps": [
+    "Pick a person",
+    "Suggest a day and time",
+    "Pick the place for them"
+   ]
+  },
+  {
+   "id": "a14",
+   "title": "Go for a run or brisk walk",
+   "cat": "active",
+   "dur": 30,
+   "cost": 0,
+   "energy": 3,
+   "setting": "outdoor",
+   "desc": "Out the door, 15 minutes one way, then turn around.",
+   "why": "Restless energy has somewhere useful to go.",
+   "steps": [
+    "Shoes on",
+    "15 minutes out",
+    "15 minutes back"
+   ]
+  },
+  {
+   "id": "a15",
+   "title": "Try a new recipe from a cookbook",
+   "cat": "cooking",
+   "dur": 60,
+   "cost": 2,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Choose something slightly beyond your comfort zone.",
+   "why": "A satisfying, shareable project with a clear finish line.",
+   "steps": [
+    "Pick the recipe",
+    "Get the ingredients",
+    "Share it with someone"
+   ]
+  },
+  {
+   "id": "a16",
+   "title": "Photograph one colour",
+   "cat": "creative",
+   "dur": 30,
+   "cost": 0,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Walk and photograph everything that is one chosen colour.",
+   "why": "Uses your camera to see more, not scroll more.",
+   "steps": [
+    "Choose a colour",
+    "Find ten examples",
+    "Pick your favourite and keep it"
+   ]
+  },
+  {
+   "id": "a17",
+   "title": "Stretch for ten minutes",
+   "cat": "mindful",
+   "dur": 10,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Neck, shoulders, back, hips. Slowly.",
+   "why": "Your body has been holding a phone posture. Undo it.",
+   "steps": [
+    "Neck rolls",
+    "Shoulder and chest opener",
+    "Forward fold and hip stretch"
+   ]
+  },
+  {
+   "id": "a18",
+   "title": "Watch a talk and take notes",
+   "cat": "learning",
+   "dur": 30,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "One deliberately chosen talk — then close the app.",
+   "why": "Intentional watching, with something to show for it.",
+   "steps": [
+    "Choose one talk before opening the app",
+    "Take three notes",
+    "Close the app when it ends"
+   ]
+  },
+  {
+   "id": "a19",
+   "title": "Volunteer an hour",
+   "cat": "social",
+   "dur": 60,
+   "cost": 0,
+   "energy": 2,
+   "setting": "either",
+   "desc": "A local shelter, a cleanup, or helping a neighbour.",
+   "why": "Meaning and connection in one hour.",
+   "steps": [
+    "Find one local option",
+    "Show up",
+    "Note one person you met"
+   ]
+  },
+  {
+   "id": "a20",
+   "title": "Board game or cards",
+   "cat": "social",
+   "dur": 45,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "With family, flatmates, or a friend.",
+   "why": "Shared play is one of the quickest ways to feel close.",
+   "steps": [
+    "Pick a game",
+    "Invite someone",
+    "Play one full round"
+   ]
+  },
+  {
+   "id": "a21",
+   "title": "Plant or repot something",
+   "cat": "outdoors",
+   "dur": 20,
+   "cost": 1,
+   "energy": 2,
+   "setting": "either",
+   "desc": "Herbs on a window sill, or repot a tired plant.",
+   "why": "Something alive you get to watch grow.",
+   "steps": [
+    "Get a pot and soil",
+    "Plant or repot",
+    "Put it where you will see it daily"
+   ]
+  },
+  {
+   "id": "a22",
+   "title": "Write 300 words of anything",
+   "cat": "creative",
+   "dur": 20,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "A story, a memory, an argument. 300 words, then stop.",
+   "why": "Creating beats consuming — and it is finished in 20 minutes.",
+   "steps": [
+    "Open a page in your Journal",
+    "Write without editing",
+    "Stop at 300 words"
+   ]
+  },
+  {
+   "id": "a23",
+   "title": "Visit a library or bookshop",
+   "cat": "learning",
+   "dur": 45,
+   "cost": 0,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "Browse a section you never visit.",
+   "why": "Serendipity without an algorithm.",
+   "steps": [
+    "Go to one unfamiliar section",
+    "Read three first pages",
+    "Leave with one idea"
+   ]
+  },
+  {
+   "id": "a24",
+   "title": "Dance to three songs",
+   "cat": "active",
+   "dur": 10,
+   "cost": 0,
+   "energy": 3,
+   "setting": "indoor",
+   "desc": "Door closed, volume up.",
+   "why": "Ten minutes that change your whole mood.",
+   "steps": [
+    "Pick three songs",
+    "Move however you like",
+    "Notice how you feel after"
+   ]
+  },
+  {
+   "id": "a25",
+   "title": "Make a zine about your week",
+   "cat": "creative",
+   "dur": 40,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Fold one sheet into an 8-page mini book and fill it with doodles and notes.",
+   "why": "A tiny finished object you made with your hands.",
+   "steps": [
+    "Fold an A4 sheet into 8 panels",
+    "One page per day of your week",
+    "Give it to someone or keep it"
+   ]
+  },
+  {
+   "id": "a26",
+   "title": "Paint with only three colours",
+   "cat": "creative",
+   "dur": 30,
+   "cost": 1,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Any paint, any paper — just three colours.",
+   "why": "Limits make creating easier, not harder.",
+   "steps": [
+    "Pick three colours",
+    "Paint something you can see from your seat",
+    "Sign and date it"
+   ]
+  },
+  {
+   "id": "a27",
+   "title": "Write a six-word story",
+   "cat": "creative",
+   "dur": 10,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "A whole story in exactly six words. Write five versions.",
+   "why": "Quick, playful, and surprisingly absorbing.",
+   "steps": [
+    "Pick a feeling from today",
+    "Write five six-word stories",
+    "Circle your favourite"
+   ]
+  },
+  {
+   "id": "a28",
+   "title": "Rearrange a corner of your room",
+   "cat": "creative",
+   "dur": 25,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Move furniture, objects or art in one corner to make it feel new.",
+   "why": "Changing your space changes how it feels to be in it.",
+   "steps": [
+    "Pick one corner",
+    "Remove everything",
+    "Put it back differently"
+   ]
+  },
+  {
+   "id": "a29",
+   "title": "Try calligraphy or hand lettering",
+   "cat": "creative",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Write one quote you love, slowly and beautifully.",
+   "why": "Slowness on purpose — the opposite of a feed.",
+   "steps": [
+    "Choose a short quote",
+    "Practise each letter large",
+    "Write the full quote once neatly"
+   ]
+  },
+  {
+   "id": "a30",
+   "title": "Find the oldest tree nearby",
+   "cat": "outdoors",
+   "dur": 40,
+   "cost": 0,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Walk your neighbourhood looking for the biggest, oldest tree.",
+   "why": "A small quest that gets you outside and noticing.",
+   "steps": [
+    "Head out with no route",
+    "Look up as you walk",
+    "Sit under the tree you choose for five minutes"
+   ]
+  },
+  {
+   "id": "a31",
+   "title": "Sunrise or sunset walk",
+   "cat": "outdoors",
+   "dur": 30,
+   "cost": 0,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "Time a walk to catch the sky changing colour.",
+   "why": "The best free show in the world, daily.",
+   "steps": [
+    "Check the sunset time",
+    "Leave 15 minutes before",
+    "Stay until the colours fade"
+   ]
+  },
+  {
+   "id": "a32",
+   "title": "Picnic in a park",
+   "cat": "outdoors",
+   "dur": 60,
+   "cost": 1,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "Pack simple food and eat somewhere green.",
+   "why": "Ordinary food tastes better outside with company.",
+   "steps": [
+    "Pack fruit and something easy",
+    "Invite one person",
+    "Leave no trace"
+   ]
+  },
+  {
+   "id": "a33",
+   "title": "Birdwatch for fifteen minutes",
+   "cat": "outdoors",
+   "dur": 15,
+   "cost": 0,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "Count how many different birds you can see or hear.",
+   "why": "Trains patient attention — and it is oddly delightful.",
+   "steps": [
+    "Find a quiet spot",
+    "Count species, not birds",
+    "Look one up later"
+   ]
+  },
+  {
+   "id": "a34",
+   "title": "Walk a street you have never walked",
+   "cat": "outdoors",
+   "dur": 30,
+   "cost": 0,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Pick a nearby street you always skip and walk all of it.",
+   "why": "Your own city has more novelty than any feed.",
+   "steps": [
+    "Choose the street",
+    "Walk it end to end",
+    "Note one thing that surprised you"
+   ]
+  },
+  {
+   "id": "a35",
+   "title": "Cook dinner for someone",
+   "cat": "social",
+   "dur": 60,
+   "cost": 1,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Make a simple meal for a friend, partner or family member.",
+   "why": "Feeding someone is one of the oldest ways to show care.",
+   "steps": [
+    "Pick a simple dish",
+    "Invite them",
+    "Eat together, phones away"
+   ]
+  },
+  {
+   "id": "a36",
+   "title": "Send a voice note to an old friend",
+   "cat": "social",
+   "dur": 5,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Thirty seconds of your actual voice, saying you thought of them.",
+   "why": "Voice carries warmth that text cannot.",
+   "steps": [
+    "Pick someone you miss",
+    "Share one memory together",
+    "Ask how they are"
+   ]
+  },
+  {
+   "id": "a37",
+   "title": "Ask a family member a story question",
+   "cat": "social",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Ask a parent or grandparent about a time before you were born.",
+   "why": "Stories connect generations — and they will not be around forever.",
+   "steps": [
+    "Ask: “What was your first job like?”",
+    "Listen without interrupting",
+    "Write down one detail later"
+   ]
+  },
+  {
+   "id": "a38",
+   "title": "Host a no-phones chai hour",
+   "cat": "social",
+   "dur": 60,
+   "cost": 1,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Invite two or three people; phones go in a basket.",
+   "why": "Undivided attention is rare and people notice it.",
+   "steps": [
+    "Invite a few people",
+    "Set out a phone basket",
+    "Make chai and talk"
+   ]
+  },
+  {
+   "id": "a39",
+   "title": "Compliment three people today",
+   "cat": "social",
+   "dur": 5,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Specific, honest compliments to three different people.",
+   "why": "Small kindness lifts both people involved.",
+   "steps": [
+    "Notice something real",
+    "Say it specifically",
+    "Do it three times"
+   ]
+  },
+  {
+   "id": "a40",
+   "title": "Learn a card trick",
+   "cat": "learning",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "One simple trick, practised until it is smooth.",
+   "why": "A new skill you can show someone tonight.",
+   "steps": [
+    "Pick one beginner trick",
+    "Practise 15 times",
+    "Perform it for someone"
+   ]
+  },
+  {
+   "id": "a41",
+   "title": "Learn the stars you can see tonight",
+   "cat": "learning",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "Find three constellations or bright planets.",
+   "why": "Looking up connects you to something bigger.",
+   "steps": [
+    "Step outside after dark",
+    "Find the brightest point",
+    "Learn the names of three"
+   ]
+  },
+  {
+   "id": "a42",
+   "title": "Teach yourself to tie five knots",
+   "cat": "learning",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Reef, bowline, clove hitch, figure-eight, sheet bend.",
+   "why": "Useful, tactile and satisfying to master.",
+   "steps": [
+    "Get a piece of rope or cord",
+    "Learn one knot at a time",
+    "Tie each one without help"
+   ]
+  },
+  {
+   "id": "a43",
+   "title": "Map your family tree",
+   "cat": "learning",
+   "dur": 40,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Draw as many generations as you can remember, then ask to fill gaps.",
+   "why": "Knowing where you come from is grounding.",
+   "steps": [
+    "Draw yourself at the bottom",
+    "Add every name you know",
+    "Call someone to fill one gap"
+   ]
+  },
+  {
+   "id": "a44",
+   "title": "Learn to cook one regional dish",
+   "cat": "learning",
+   "dur": 60,
+   "cost": 1,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Pick a dish from a state or country you have never tasted.",
+   "why": "Learning through taste is the most fun kind.",
+   "steps": [
+    "Choose a region",
+    "Find one recipe",
+    "Cook and share it"
+   ]
+  },
+  {
+   "id": "a45",
+   "title": "Five-minute body scan",
+   "cat": "mindful",
+   "dur": 5,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Lie down and move your attention slowly from toes to head.",
+   "why": "A quick reset when your head feels noisy.",
+   "steps": [
+    "Lie down",
+    "Notice each part of your body",
+    "Breathe out any tension"
+   ]
+  },
+  {
+   "id": "a46",
+   "title": "Tea without a screen",
+   "cat": "mindful",
+   "dur": 10,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Make a cup of tea and drink it doing nothing else.",
+   "why": "Ten quiet minutes of just one thing.",
+   "steps": [
+    "Make the tea slowly",
+    "Sit somewhere comfortable",
+    "Notice the taste and warmth"
+   ]
+  },
+  {
+   "id": "a47",
+   "title": "Gratitude walk",
+   "cat": "mindful",
+   "dur": 15,
+   "cost": 0,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "Walk and name one thing you are grateful for every minute.",
+   "why": "Combines movement with a proven mood lift.",
+   "steps": [
+    "Start walking",
+    "Each minute, name one good thing",
+    "Write the best one in your Journal"
+   ]
+  },
+  {
+   "id": "a48",
+   "title": "Write tomorrow on paper",
+   "cat": "mindful",
+   "dur": 10,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Three things that would make tomorrow good, on paper.",
+   "why": "Sleep easier with tomorrow already sorted.",
+   "steps": [
+    "Grab paper",
+    "Write three small intentions",
+    "Leave it where you will see it"
+   ]
+  },
+  {
+   "id": "a49",
+   "title": "Single-task an hour",
+   "cat": "mindful",
+   "dur": 60,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "One task, one hour, notifications off.",
+   "why": "Deep focus feels better than constant switching.",
+   "steps": [
+    "Pick one task",
+    "Turn on Do Not Disturb",
+    "Work until the hour ends"
+   ]
+  },
+  {
+   "id": "a50",
+   "title": "Yoga for beginners",
+   "cat": "active",
+   "dur": 20,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Sun salutations, a few standing poses and a rest.",
+   "why": "Strength, flexibility and calm in one go.",
+   "steps": [
+    "Clear some floor space",
+    "Five rounds of sun salutation",
+    "Rest for two minutes"
+   ]
+  },
+  {
+   "id": "a51",
+   "title": "Play badminton or cricket",
+   "cat": "active",
+   "dur": 45,
+   "cost": 0,
+   "energy": 3,
+   "setting": "outdoor",
+   "desc": "Grab a friend and a racquet or bat — the street works.",
+   "why": "Play is exercise you forget you are doing.",
+   "steps": [
+    "Invite someone",
+    "Find open space",
+    "Keep score — or do not"
+   ]
+  },
+  {
+   "id": "a52",
+   "title": "Take the stairs challenge",
+   "cat": "active",
+   "dur": 10,
+   "cost": 0,
+   "energy": 3,
+   "setting": "either",
+   "desc": "Climb stairs for ten minutes at a steady pace.",
+   "why": "Quick cardio, no gear, anywhere.",
+   "steps": [
+    "Find a staircase",
+    "Climb up and down for ten minutes",
+    "Stretch your calves after"
+   ]
+  },
+  {
+   "id": "a53",
+   "title": "Cycle somewhere instead of riding",
+   "cat": "active",
+   "dur": 40,
+   "cost": 0,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Pick a short errand and cycle there.",
+   "why": "Turns a chore into movement and fresh air.",
+   "steps": [
+    "Pick a nearby errand",
+    "Check your bike tyres",
+    "Ride there and back"
+   ]
+  },
+  {
+   "id": "a54",
+   "title": "Swim a few laps",
+   "cat": "active",
+   "dur": 45,
+   "cost": 1,
+   "energy": 3,
+   "setting": "outdoor",
+   "desc": "A local pool, a few slow laps.",
+   "why": "Water calms the mind and works the whole body.",
+   "steps": [
+    "Find a pool",
+    "Swim slowly for 20 minutes",
+    "Float for a minute at the end"
+   ]
+  },
+  {
+   "id": "a55",
+   "title": "Bake bread or rotis from scratch",
+   "cat": "cooking",
+   "dur": 60,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Flour, water, your hands. Knead it properly.",
+   "why": "Kneading is surprisingly meditative.",
+   "steps": [
+    "Make the dough",
+    "Knead for ten minutes",
+    "Cook and eat them warm"
+   ]
+  },
+  {
+   "id": "a56",
+   "title": "Make a fresh chutney",
+   "cat": "cooking",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Mint, coriander, tomato or coconut — fresh and quick.",
+   "why": "Big flavour from a few minutes of work.",
+   "steps": [
+    "Pick a chutney",
+    "Grind the ingredients",
+    "Have it with your next meal"
+   ]
+  },
+  {
+   "id": "a57",
+   "title": "Recreate a childhood dish",
+   "cat": "cooking",
+   "dur": 45,
+   "cost": 1,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Cook something you loved as a kid. Call whoever made it for tips.",
+   "why": "Taste is a direct line to memory.",
+   "steps": [
+    "Pick the dish",
+    "Ask someone for the recipe",
+    "Cook it and save the memory"
+   ]
+  },
+  {
+   "id": "a58",
+   "title": "Plan and prep tomorrow’s lunch",
+   "cat": "cooking",
+   "dur": 20,
+   "cost": 1,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Cook something simple tonight for tomorrow.",
+   "why": "Future you will be grateful.",
+   "steps": [
+    "Choose an easy dish",
+    "Cook a double portion",
+    "Pack it for tomorrow"
+   ]
+  },
+  {
+   "id": "a59",
+   "title": "Make a playlist for a friend",
+   "cat": "music",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Ten songs that remind you of them, in order.",
+   "why": "A gift that says “I know you”.",
+   "steps": [
+    "Pick a friend",
+    "Choose ten songs",
+    "Send it with one line of why"
+   ]
+  },
+  {
+   "id": "a60",
+   "title": "Listen to a full album, lights off",
+   "cat": "music",
+   "dur": 45,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "One album, start to finish, doing nothing else.",
+   "why": "Real listening is a different experience from background noise.",
+   "steps": [
+    "Choose an album",
+    "Lie down, lights off",
+    "Listen without skipping"
+   ]
+  },
+  {
+   "id": "a61",
+   "title": "Learn the chords of one song",
+   "cat": "music",
+   "dur": 30,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Guitar, ukulele, keyboard — three or four chords.",
+   "why": "Most songs need only a few chords.",
+   "steps": [
+    "Pick a simple song",
+    "Learn each chord",
+    "Play along slowly"
+   ]
+  },
+  {
+   "id": "a62",
+   "title": "Go to a live gig or open mic",
+   "cat": "music",
+   "dur": 90,
+   "cost": 1,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Any local live music, any genre.",
+   "why": "Live music hits differently with people around you.",
+   "steps": [
+    "Find a nearby event",
+    "Bring a friend",
+    "Stay for at least three acts"
+   ]
+  },
+  {
+   "id": "a63",
+   "title": "Sing your favourite song out loud",
+   "cat": "music",
+   "dur": 5,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Full volume, every word.",
+   "why": "Singing releases tension and lifts mood fast.",
+   "steps": [
+    "Pick the song",
+    "Close the door",
+    "Sing like nobody is listening"
+   ]
+  },
+  {
+   "id": "a64",
+   "title": "Discover a new genre",
+   "cat": "music",
+   "dur": 30,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Pick a genre you never listen to and find three songs you like.",
+   "why": "Stretching your taste is like travel for your ears.",
+   "steps": [
+    "Choose a genre",
+    "Listen to ten tracks",
+    "Save your three favourites"
+   ]
+  },
+  {
+   "id": "a65",
+   "title": "Help a neighbour with something",
+   "cat": "community",
+   "dur": 30,
+   "cost": 0,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Carry groceries, water plants, or just ask if they need anything.",
+   "why": "Belonging starts on your own street.",
+   "steps": [
+    "Knock or message a neighbour",
+    "Offer one specific thing",
+    "Follow through"
+   ]
+  },
+  {
+   "id": "a66",
+   "title": "Join a local club or group",
+   "cat": "community",
+   "dur": 60,
+   "cost": 1,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "A running club, book club, choir, or hobby meetup.",
+   "why": "Regular faces turn into friends.",
+   "steps": [
+    "Search for one group nearby",
+    "Go once",
+    "Talk to one person there"
+   ]
+  },
+  {
+   "id": "a67",
+   "title": "Pick up litter for twenty minutes",
+   "cat": "community",
+   "dur": 20,
+   "cost": 0,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "A bag, gloves and your street or park.",
+   "why": "Visible good you can see immediately.",
+   "steps": [
+    "Grab a bag and gloves",
+    "Clean one stretch",
+    "Notice how it looks after"
+   ]
+  },
+  {
+   "id": "a68",
+   "title": "Donate things you do not use",
+   "cat": "community",
+   "dur": 30,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Clothes, books or kitchenware someone else could use.",
+   "why": "Lighter home, useful gift.",
+   "steps": [
+    "Fill one bag",
+    "Find a local donation spot",
+    "Drop it off this week"
+   ]
+  },
+  {
+   "id": "a69",
+   "title": "Teach someone something you know",
+   "cat": "community",
+   "dur": 30,
+   "cost": 0,
+   "energy": 2,
+   "setting": "either",
+   "desc": "A skill, a recipe, a shortcut — share it with someone who wants it.",
+   "why": "Teaching deepens your own skill and helps someone else.",
+   "steps": [
+    "Pick a skill",
+    "Offer to show someone",
+    "Keep it to 30 minutes"
+   ]
+  },
+  {
+   "id": "a70",
+   "title": "Write a thank-you note to a local worker",
+   "cat": "community",
+   "dur": 10,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "Your doctor, a shopkeeper, a teacher, the security guard.",
+   "why": "People rarely hear how much they matter.",
+   "steps": [
+    "Pick someone",
+    "Write two honest lines",
+    "Hand it to them"
+   ]
+  },
+  {
+   "id": "a71",
+   "title": "Fix one small broken thing",
+   "cat": "home",
+   "dur": 30,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "A loose handle, a wobbly chair, a dead bulb.",
+   "why": "A small repair is a big feeling of competence.",
+   "steps": [
+    "Pick one broken thing",
+    "Find out how to fix it",
+    "Fix it"
+   ]
+  },
+  {
+   "id": "a72",
+   "title": "Repot or propagate plants",
+   "cat": "home",
+   "dur": 25,
+   "cost": 1,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Take cuttings from a plant and put them in water.",
+   "why": "Free new plants and something to watch grow.",
+   "steps": [
+    "Choose a healthy plant",
+    "Cut a stem below a node",
+    "Put it in water by a window"
+   ]
+  },
+  {
+   "id": "a73",
+   "title": "Organise one drawer",
+   "cat": "home",
+   "dur": 15,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Empty it, sort it, put back only what belongs.",
+   "why": "A tidy drawer is a tiny calm space.",
+   "steps": [
+    "Empty the drawer",
+    "Sort into keep, move, toss",
+    "Put back the keep pile"
+   ]
+  },
+  {
+   "id": "a74",
+   "title": "Print and frame a photo",
+   "cat": "home",
+   "dur": 30,
+   "cost": 1,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "One photo you love, off your phone and onto the wall.",
+   "why": "Memories you see daily beat ones buried in a gallery.",
+   "steps": [
+    "Pick a photo",
+    "Print it",
+    "Frame or tape it somewhere visible"
+   ]
+  },
+  {
+   "id": "a75",
+   "title": "Deep-clean your desk",
+   "cat": "home",
+   "dur": 20,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Wipe, sort, and reset your work surface.",
+   "why": "A clear desk makes starting easier.",
+   "steps": [
+    "Remove everything",
+    "Wipe it down",
+    "Put back only daily essentials"
+   ]
+  },
+  {
+   "id": "a76",
+   "title": "Solve a jigsaw puzzle",
+   "cat": "play",
+   "dur": 60,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Even a 300-piece puzzle — alone or with someone.",
+   "why": "Absorbing, calm and endlessly satisfying.",
+   "steps": [
+    "Find the edge pieces",
+    "Sort by colour",
+    "Work on it for an hour"
+   ]
+  },
+  {
+   "id": "a77",
+   "title": "Play chess or carrom",
+   "cat": "play",
+   "dur": 30,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "With a friend or family member, on a real board.",
+   "why": "Strategy and laughter with someone across from you.",
+   "steps": [
+    "Set up the board",
+    "Invite someone",
+    "Play best of three"
+   ]
+  },
+  {
+   "id": "a78",
+   "title": "Do a crossword or sudoku on paper",
+   "cat": "play",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "either",
+   "desc": "From a newspaper or a printed puzzle book.",
+   "why": "A finite puzzle with a satisfying finish.",
+   "steps": [
+    "Get a puzzle",
+    "Use a pen, no hints",
+    "Finish or come back later"
+   ]
+  },
+  {
+   "id": "a79",
+   "title": "Build something with LEGO or blocks",
+   "cat": "play",
+   "dur": 30,
+   "cost": 1,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "No instructions — build what you imagine.",
+   "why": "Play is not just for kids; it restores adults too.",
+   "steps": [
+    "Pick a theme",
+    "Build for 30 minutes",
+    "Photograph your creation"
+   ]
+  },
+  {
+   "id": "a80",
+   "title": "Play a party game",
+   "cat": "play",
+   "dur": 45,
+   "cost": 0,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Charades, Pictionary, Antakshari — with two or more people.",
+   "why": "Shared laughter is the fastest route to closeness.",
+   "steps": [
+    "Gather people",
+    "Pick a game",
+    "Play until someone wins"
+   ]
+  },
+  {
+   "id": "a81",
+   "title": "Fly a kite",
+   "cat": "play",
+   "dur": 40,
+   "cost": 1,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Find an open roof or field and get it up in the wind.",
+   "why": "Joyful, outdoors and impossible while scrolling.",
+   "steps": [
+    "Get a kite",
+    "Find wind and open space",
+    "Keep it flying ten minutes"
+   ]
+  },
+  {
+   "id": "a82",
+   "title": "Take a long, unhurried shower",
+   "cat": "selfcare",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Warm water, no rush, your favourite music.",
+   "why": "Simple care for your body counts.",
+   "steps": [
+    "Put on calm music",
+    "Take your time",
+    "Moisturise after"
+   ]
+  },
+  {
+   "id": "a83",
+   "title": "Go to bed an hour early",
+   "cat": "selfcare",
+   "dur": 60,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Phone charging outside the bedroom tonight.",
+   "why": "Sleep fixes more than most apps can.",
+   "steps": [
+    "Charge your phone in another room",
+    "Read or rest",
+    "Lights out an hour early"
+   ]
+  },
+  {
+   "id": "a84",
+   "title": "Cook yourself a nourishing meal",
+   "cat": "selfcare",
+   "dur": 40,
+   "cost": 1,
+   "energy": 2,
+   "setting": "indoor",
+   "desc": "Something warm and wholesome, made just for you.",
+   "why": "Caring for yourself is a skill worth practising.",
+   "steps": [
+    "Pick a comforting dish",
+    "Cook it slowly",
+    "Eat at a table, no screens"
+   ]
+  },
+  {
+   "id": "a85",
+   "title": "Do a digital declutter",
+   "cat": "selfcare",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Delete apps you do not use and turn off non-essential notifications.",
+   "why": "Fewer pings, more peace.",
+   "steps": [
+    "Delete three unused apps",
+    "Turn off five notifications",
+    "Move social apps off your home screen"
+   ]
+  },
+  {
+   "id": "a86",
+   "title": "Take a nap guilt-free",
+   "cat": "selfcare",
+   "dur": 20,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Twenty minutes, alarm set.",
+   "why": "Rest is productive.",
+   "steps": [
+    "Set an alarm for 20 minutes",
+    "Lie down somewhere dark",
+    "Get up slowly"
+   ]
+  },
+  {
+   "id": "a87",
+   "title": "Write down what is worrying you",
+   "cat": "selfcare",
+   "dur": 10,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Empty your head onto paper, then circle one thing you can act on.",
+   "why": "Worries shrink when they are written down.",
+   "steps": [
+    "Write every worry",
+    "Circle the one you can act on",
+    "Pick a first step"
+   ]
+  },
+  {
+   "id": "a88",
+   "title": "Take a bus to its last stop",
+   "cat": "explore",
+   "dur": 90,
+   "cost": 1,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Hop on a local bus and ride it to the end of the line.",
+   "why": "Adventure is closer than you think.",
+   "steps": [
+    "Pick a bus route",
+    "Ride to the last stop",
+    "Walk around for 20 minutes"
+   ]
+  },
+  {
+   "id": "a89",
+   "title": "Visit a museum or gallery",
+   "cat": "explore",
+   "dur": 90,
+   "cost": 1,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Spend time with three pieces rather than rushing all of them.",
+   "why": "Slow looking is deeply restoring.",
+   "steps": [
+    "Pick a museum",
+    "Choose three pieces",
+    "Spend five minutes with each"
+   ]
+  },
+  {
+   "id": "a90",
+   "title": "Eat at a place you have never tried",
+   "cat": "explore",
+   "dur": 45,
+   "cost": 1,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "A local stall or small restaurant, ordering something new.",
+   "why": "New tastes make ordinary days memorable.",
+   "steps": [
+    "Pick a place you always pass",
+    "Order something unfamiliar",
+    "Rate it in your Journal"
+   ]
+  },
+  {
+   "id": "a91",
+   "title": "Visit a local market",
+   "cat": "explore",
+   "dur": 45,
+   "cost": 0,
+   "energy": 2,
+   "setting": "outdoor",
+   "desc": "Wander a fresh market or bazaar and talk to one vendor.",
+   "why": "Colour, smell and people — a full-sense experience.",
+   "steps": [
+    "Go without a list",
+    "Talk to one vendor",
+    "Bring home one new thing"
+   ]
+  },
+  {
+   "id": "a92",
+   "title": "Plan a day trip",
+   "cat": "explore",
+   "dur": 30,
+   "cost": 0,
+   "energy": 1,
+   "setting": "indoor",
+   "desc": "Pick a place within two hours and plan the route, food and stops.",
+   "why": "Planning is half the joy.",
+   "steps": [
+    "Pick a destination",
+    "Plan the route and stops",
+    "Put a date on it"
+   ]
+  },
+  {
+   "id": "a93",
+   "title": "Visit a temple, church or historic site",
+   "cat": "explore",
+   "dur": 60,
+   "cost": 0,
+   "energy": 1,
+   "setting": "outdoor",
+   "desc": "Somewhere old nearby you have never really looked at.",
+   "why": "History in your own city gives perspective.",
+   "steps": [
+    "Pick a site",
+    "Read one fact about it",
+    "Sit there quietly for ten minutes"
+   ]
+  }
+ ]
+}

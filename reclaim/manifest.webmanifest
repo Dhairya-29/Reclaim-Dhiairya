@@ -1,0 +1,21 @@
+{
+  "name": "Reclaim",
+  "short_name": "Reclaim",
+  "description": "Less empty scrolling. More life worth remembering.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F5EF",
+  "theme_color": "#F7F5EF",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Mindful pause", "url": "./?go=pause", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Record a thought", "url": "./?go=record", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}
