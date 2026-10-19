@@ -1,8 +1,12 @@
 """Reclaim API: the companion, draft and recommendation backend for the Reclaim app.
 
 Run:  uvicorn main:app --reload --port 8000
-Env:  ANTHROPIC_API_KEY   enables Claude (otherwise safe rule-based replies)
-      RECLAIM_MODEL       default claude-opus-5-5
+Env:  ANTHROPIC_API_KEY   use Claude (checked first)
+      GROQ_API_KEY        use Groq (free tier) when no Anthropic key is set
+                          with neither key: safe rule-based replies
+      RECLAIM_PROVIDER    force claude | groq | rules
+      RECLAIM_MODEL       Claude model, default claude-opus-5-5
+      GROQ_MODEL          Groq model, default openai/gpt-oss-120b
       ALLOWED_ORIGINS     comma-separated CORS origins, default *
       ACTIVITIES_PATH     shared catalogue, default ../reclaim/activities.json
       RECLAIM_DB          SQLite file for feedback, default ./reclaim.db
@@ -19,12 +23,14 @@ from pathlib import Path
 from typing import Literal, Optional, Protocol
 
 import anthropic
+import groq
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 HERE = Path(__file__).parent
 MODEL = os.getenv('RECLAIM_MODEL', 'claude-opus-5-5')
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-120b')
 CATALOG = json.loads(Path(os.getenv('ACTIVITIES_PATH', HERE.parent / 'reclaim' / 'activities.json')).read_text(encoding='utf8'))
 ACTIVITIES = CATALOG['activities']
 BY_ID = {a['id']: a for a in ACTIVITIES}
@@ -68,37 +74,80 @@ class Refused(Exception):
     """The model declined the request."""
 
 
+class ProviderError(Exception):
+    """The model service failed; `busy` means rate-limited (worth retrying soon)."""
+
+    def __init__(self, kind: str, busy: bool = False):
+        super().__init__(kind)
+        self.busy = busy
+
+
 class Provider(Protocol):
     name: str
+    model: Optional[str]
 
     async def complete(self, system: str, messages: list[dict], max_tokens: int, effort: str) -> str: ...
 
 
 class ClaudeProvider:
     name = 'claude'
+    model = MODEL
 
     def __init__(self):
         self.client = anthropic.AsyncAnthropic(timeout=40.0, max_retries=2)
 
     async def complete(self, system, messages, max_tokens=2048, effort='low'):
-        r = await self.client.beta.messages.create(
-            model=MODEL,
-            max_tokens=max_tokens,
-            system=system,
-            messages=messages,
-            output_config={'effort': effort},
-            # If a safety classifier declines, the API retries on Anthropic's recommended fallback model.
-            betas=['server-side-fallback-2026-07-01'],
-            fallbacks='default',
-        )
+        try:
+            r = await self.client.beta.messages.create(
+                model=MODEL,
+                max_tokens=max_tokens,
+                system=system,
+                messages=messages,
+                output_config={'effort': effort},
+                # If a safety classifier declines, the API retries on Anthropic's recommended fallback model.
+                betas=['server-side-fallback-2026-07-01'],
+                fallbacks='default',
+            )
+        except anthropic.RateLimitError as e:
+            raise ProviderError('RateLimitError', busy=True) from e
+        except anthropic.APIError as e:
+            raise ProviderError(type(e).__name__) from e
         if r.stop_reason == 'refusal':
             raise Refused()
         return ''.join(b.text for b in r.content if b.type == 'text').strip()
 
 
+class GroqProvider:
+    """Groq's free tier, running an open model. Same prompts as Claude."""
+    name = 'groq'
+    model = GROQ_MODEL
+
+    def __init__(self):
+        self.client = groq.AsyncGroq(timeout=40.0, max_retries=2)
+
+    async def complete(self, system, messages, max_tokens=2048, effort='low'):
+        kwargs = {'reasoning_effort': effort, 'reasoning_format': 'hidden'} if GROQ_MODEL.startswith('openai/gpt-oss') else {}
+        try:
+            r = await self.client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[{'role': 'system', 'content': system}, *messages],
+                max_completion_tokens=max_tokens,
+                **kwargs,
+            )
+        except groq.RateLimitError as e:
+            raise ProviderError('RateLimitError', busy=True) from e
+        except groq.APIError as e:
+            raise ProviderError(type(e).__name__) from e
+        text = (r.choices[0].message.content or '').strip()
+        if not text:
+            raise ProviderError('EmptyReply')
+        return text
+
+
 class RuleProvider:
     """No model configured: short, safe, honest replies so the app stays useful."""
     name = 'rules'
+    model = None
 
     async def complete(self, system, messages, max_tokens=0, effort=''):
         raise LookupError('no model configured')
@@ -106,8 +155,13 @@ class RuleProvider:
 
 def make_provider() -> Provider:
     forced = os.getenv('RECLAIM_PROVIDER')
-    has_key = os.getenv('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_AUTH_TOKEN')
-    return ClaudeProvider() if forced == 'claude' or (forced != 'rules' and has_key) else RuleProvider()
+    if forced:
+        return {'claude': ClaudeProvider, 'groq': GroqProvider, 'rules': RuleProvider}[forced]()
+    if os.getenv('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_AUTH_TOKEN'):
+        return ClaudeProvider()
+    if os.getenv('GROQ_API_KEY'):
+        return GroqProvider()
+    return RuleProvider()
 
 
 # ---------------------------------------------------------------- prompts
@@ -246,7 +300,7 @@ app.add_middleware(
 
 @app.get('/v1/health')
 def health():
-    return {'status': 'ok', 'provider': app.state.provider.name, 'model': MODEL if app.state.provider.name == 'claude' else None,
+    return {'status': 'ok', 'provider': app.state.provider.name, 'model': app.state.provider.model,
             'activities': len(ACTIVITIES), 'topics': len(TOPICS)}
 
 
@@ -261,8 +315,8 @@ async def chat(body: ChatIn):
             raise HTTPException(503, 'No model configured; the app drafts on-device instead.')
         except Refused:
             raise HTTPException(422, 'The model declined to draft this.')
-        except anthropic.APIError as e:
-            raise HTTPException(502, f'Model unavailable: {type(e).__name__}')
+        except ProviderError as e:
+            raise HTTPException(503 if e.busy else 502, f'Model unavailable: {e}')
         return ChatOut(reply=text, provider=provider.name)
 
     if CRISIS.search(body.message):  # deterministic, never left to the model
@@ -279,10 +333,10 @@ async def chat(body: ChatIn):
         return ChatOut(reply=reply, activity_id=aid, provider=provider.name)
     except Refused:
         return ChatOut(reply="I can't help with that one, but I'm happy to talk about how you're doing or find something good to do.", provider=provider.name)
-    except anthropic.RateLimitError:
-        raise HTTPException(503, 'The companion is busy. Try again in a moment.')
-    except anthropic.APIError as e:
-        raise HTTPException(502, f'Model unavailable: {type(e).__name__}')
+    except ProviderError as e:
+        if e.busy:
+            raise HTTPException(503, 'The companion is busy. Try again in a moment.')
+        raise HTTPException(502, f'Model unavailable: {e}')
 
     aid = None
     m = TAG.search(text)

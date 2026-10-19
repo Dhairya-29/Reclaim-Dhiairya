@@ -10,7 +10,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.7
-      - key: ANTHROPIC_API_KEY
+      - key: GROQ_API_KEY
         sync: false # Render asks you for this; it never goes in the repo
       - key: ALLOWED_ORIGINS
-        sync: false # your Netlify address, e.g. https://reclaim-app.netlify.app
+        value: https://reclaimyourself.netlify.app
+      # To switch to Claude later, add ANTHROPIC_API_KEY in the Render dashboard (it takes priority).

@@ -69,3 +69,57 @@ def test_feedback_and_delete():
     assert client.post('/v1/chat/feedback', json={'conversation_id': 'c1', 'message_id': 'm1', 'rating': 'up'}).json()['ok']
     assert client.delete('/v1/conversations/c1').json()['deleted'] >= 1
     assert client.delete('/v1/conversations/c1').json()['deleted'] == 0
+
+
+def test_provider_selection(monkeypatch):
+    for k in ('RECLAIM_PROVIDER', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'GROQ_API_KEY'):
+        monkeypatch.delenv(k, raising=False)
+    assert main.make_provider().name == 'rules'
+    monkeypatch.setenv('GROQ_API_KEY', 'gsk_test')
+    assert main.make_provider().name == 'groq'
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'sk-test')
+    assert main.make_provider().name == 'claude'  # Claude wins when both are set
+
+
+def test_groq_request_and_errors(monkeypatch):
+    import asyncio
+    import groq
+    monkeypatch.setenv('GROQ_API_KEY', 'gsk_test')
+    p = main.GroqProvider()
+    seen = {}
+
+    class Msg:
+        content = 'Hello there.'
+
+    class Resp:
+        choices = [type('C', (), {'message': Msg()})()]
+
+    async def ok(**kw):
+        seen.update(kw)
+        return Resp()
+
+    monkeypatch.setattr(p.client.chat.completions, 'create', ok)
+    assert asyncio.run(p.complete('SYS', [{'role': 'user', 'content': 'hi'}])) == 'Hello there.'
+    assert seen['messages'][0] == {'role': 'system', 'content': 'SYS'} and seen['model'] == main.GROQ_MODEL
+    assert seen['reasoning_format'] == 'hidden'
+
+    async def limited(**kw):
+        raise groq.RateLimitError('slow down', response=__import__('httpx').Response(429, request=__import__('httpx').Request('POST', 'https://x')), body=None)
+
+    monkeypatch.setattr(p.client.chat.completions, 'create', limited)
+    try:
+        asyncio.run(p.complete('SYS', []))
+        assert False
+    except main.ProviderError as e:
+        assert e.busy
+
+
+def test_busy_provider_returns_503():
+    class Busy:
+        name, model = 'groq', 'x'
+
+        async def complete(self, *a, **k):
+            raise main.ProviderError('RateLimitError', busy=True)
+
+    main.app.state.provider = Busy()
+    assert client.post('/v1/chat', json={'message': 'hi'}).status_code == 503

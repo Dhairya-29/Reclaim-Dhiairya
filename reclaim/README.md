@@ -92,7 +92,7 @@ Tap **+** in the Journal, or pick a chip on an empty stream, to start from one o
 
 ## Backend
 
-`backend/main.py` is a FastAPI service that implements the endpoints from your plan. It calls Claude (`claude-opus-5-5`) through the official `anthropic` SDK.
+`backend/main.py` is a FastAPI service that implements the endpoints from your plan. It uses **Groq** (free tier, `openai/gpt-oss-120b`) when `GROQ_API_KEY` is set, or **Claude** (`claude-opus-5-5`) when `ANTHROPIC_API_KEY` is set. Claude takes priority if both are set. Each uses its official Python SDK, and both get the same prompts.
 
 | Endpoint | What it does |
 |---|---|
@@ -131,7 +131,7 @@ On **Render** (free plan) or any Python host:
 2. On render.com, create a **New → Web Service** from that repository with these settings:
    - Build command: `pip install -r backend/requirements.txt`
    - Start command: `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - Environment variables: `ANTHROPIC_API_KEY` = your key, and `ALLOWED_ORIGINS` = your app's address (e.g. `https://something.netlify.app`)
+   - Environment variables: `GROQ_API_KEY` (or `ANTHROPIC_API_KEY`) = your key, and `ALLOWED_ORIGINS` = your app's address (e.g. `https://reclaimyourself.netlify.app`)
 3. When it's live, paste the `https://….onrender.com` address into the app's Settings and tap **Test connection**.
 
 The app must be on HTTPS to call an HTTPS backend, so pair this with Option A below.
