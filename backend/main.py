@@ -34,6 +34,8 @@ DB_PATH = os.getenv('RECLAIM_DB', str(Path(__file__).parent / 'reclaim.db'))
 # A conservative phrase tripwire that runs before any model, not a clinical risk detector.
 CRISIS = re.compile(r"\b(kill myself|suicid\w*|end my life|take my own life|want to die|don'?t want to live|do not want to live"
                     r"|better off dead|hurt myself|harm myself|self[- ]?harm|cut myself|plan to (kill|hurt|harm) myself)\b", re.I)
+# Ideas must get people off screens; contacting a person (social/community ideas) is the exception.
+SCREEN = re.compile(r'\b(apps?|document|videos?|youtube|website|online|screens?|laptop|computer|voice[- ]?memo|google)\b', re.I)
 UNSAFE_REPLY = re.compile(r'\b(you should kill yourself|go kill yourself|stop taking your medication|ignore your doctor)\b', re.I)
 SAFE_FALLBACK = "I'm here with you. Could you tell me a bit more about how you're feeling right now?"
 
@@ -82,7 +84,8 @@ DRAFT_SYSTEM = """You turn someone's journal thoughts (spoken or typed, sometime
 IDEAS_SYSTEM = """You invent small, real-world things for someone to do right now instead of scrolling.
 
 - Fresh and specific, never generic: name a concrete object, kind of place, food, music genre, game or person to contact. Vary the topics.
-- Safe, legal, kind and affordable. No screens except to contact a real person. Nothing medical.
+- Safe, legal, kind and affordable. Nothing medical.
+- No screens: never ask them to open an app, document, video, website or their phone, except to call or message a real person.
 - Respect every constraint you are given (time, energy, budget, place, and what they have told you before). Never repeat an idea from the avoid list.
 - "message": if they said how they feel, one or two warm sentences that gently reflect it (no certainty, no diagnosis) and say the ideas might fit. Otherwise an empty string.
 
@@ -115,7 +118,7 @@ def parse_ideas(text: str, f: 'Filters', avoid: set[str], n: int) -> tuple[str, 
             continue
         blob = ' '.join([idea['title'], idea['desc'], idea['why'], *idea['steps']])
         if (not idea['title'] or idea['cat'] not in TOPICS or idea['title'].lower() in avoid or not fits(idea, f)
-                or UNSAFE_REPLY.search(blob) or CRISIS.search(blob)):
+                or UNSAFE_REPLY.search(blob) or CRISIS.search(blob) or (SCREEN.search(blob) and idea['cat'] not in ('social', 'community'))):
             continue
         idea['steps'] = idea['steps'] or [idea['desc'] or idea['title']]
         ideas.append(idea)

@@ -86,6 +86,7 @@ def test_model_ideas_are_parsed_and_sent_constraints():
     {**IDEA, 'title': 'read a chapter'},                 # in the avoid list (any case)
     {**IDEA, 'description': 'Then stop taking your medication.'},
     {k: v for k, v in IDEA.items() if k != 'title'},     # missing title
+    {**IDEA, 'steps': ['Open a voice-memo app on your phone', 'Hum']},  # sends them back to a screen
 ])
 def test_bad_model_ideas_are_dropped(bad):
     f = main.Filters()
@@ -224,3 +225,8 @@ def test_ollama_request_strips_thinking_and_maps_errors():
 
 def test_long_notes_are_rejected():
     assert client.post('/v1/activities/recommend', json={'notes': ['x' * 500]}).status_code == 422
+
+
+def test_screen_ok_only_for_contacting_people():
+    call = {**IDEA, 'title': 'Call your cousin', 'topic': 'social', 'steps': ['Open WhatsApp app', 'Call them']}
+    assert [i['title'] for i in main.parse_ideas(model_json(call), main.Filters(), set(), 3)[1]] == ['Call your cousin']
