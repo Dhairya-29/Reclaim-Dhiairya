@@ -1,0 +1,1450 @@
+{
+ "topics": [
+  [
+   "creative",
+   "Creative"
+  ],
+  [
+   "outdoors",
+   "Outdoors"
+  ],
+  [
+   "social",
+   "People"
+  ],
+  [
+   "learning",
+   "Learning"
+  ],
+  [
+   "mindful",
+   "Calm"
+  ],
+  [
+   "active",
+   "Movement"
+  ],
+  [
+   "cooking",
+   "Cooking"
+  ],
+  [
+   "music",
+   "Music"
+  ],
+  [
+   "community",
+   "Community"
+  ],
+  [
+   "home",
+   "Home & DIY"
+  ],
+  [
+   "play",
+   "Games & play"
+  ],
+  [
+   "selfcare",
+   "Self-care"
+  ],
+  [
+   "explore",
+   "Explore"
+  ]
+ ],
+ "moods": [
+  {
+   "id": "calm",
+   "label": "Calm",
+   "priority": 7,
+   "words": "\\b(calm|okay|ok|fine|relaxed|peaceful|chill|alright|content)\\b",
+   "cats": {
+    "outdoors": 1,
+    "creative": 1,
+    "social": 1,
+    "explore": 1
+   },
+   "energy": {},
+   "msg": "A calm moment is a good time to do something worth remembering. A few ideas:"
+  },
+  {
+   "id": "good",
+   "label": "Good",
+   "priority": 6,
+   "words": "\\b(good|great|happy|excited|amazing|awesome|grateful|joyful|fantastic|wonderful|energetic)\\b",
+   "cats": {
+    "outdoors": 1,
+    "creative": 1,
+    "social": 1,
+    "explore": 1
+   },
+   "energy": {
+    "2": 1,
+    "3": 1
+   },
+   "msg": "Glad you are feeling good. Here are a few ways to make the most of it:"
+  },
+  {
+   "id": "tired",
+   "label": "Tired",
+   "priority": 2,
+   "words": "\\b(tired|exhausted|drained|sleepy|worn out|burn(ed|t)? out|no energy|fatigued)\\b",
+   "cats": {
+    "selfcare": 2,
+    "mindful": 2
+   },
+   "energy": {
+    "1": 2,
+    "2": -1,
+    "3": -1
+   },
+   "msg": "Being tired is a signal, not a failure. These ask very little of you:"
+  },
+  {
+   "id": "restless",
+   "label": "Restless",
+   "priority": 5,
+   "words": "\\b(restless|bored|boring|antsy|fidgety|angry|annoyed|irritated|frustrated|scrolling|reels|doom)\\b",
+   "cats": {
+    "active": 1,
+    "play": 1
+   },
+   "energy": {
+    "2": 1,
+    "3": 3
+   },
+   "msg": "That restless energy can go somewhere good. Try one of these:"
+  },
+  {
+   "id": "anxious",
+   "label": "Anxious",
+   "priority": 3,
+   "words": "\\b(anxious|anxiety|nervous|worried|worry|stressed|stress|overwhelmed|overwhelming|panic|on edge|scared|afraid)\\b",
+   "cats": {
+    "mindful": 3,
+    "selfcare": 2
+   },
+   "energy": {
+    "1": 1,
+    "3": -1
+   },
+   "msg": "That sounds like a lot to carry. These might help you slow down a little:"
+  },
+  {
+   "id": "low",
+   "label": "Low",
+   "priority": 4,
+   "words": "\\b(sad|down|low|depressed|unhappy|upset|crying|empty|hopeless|heavy)\\b",
+   "cats": {
+    "selfcare": 1,
+    "social": 1
+   },
+   "energy": {
+    "1": 2,
+    "2": -1,
+    "3": -1
+   },
+   "msg": "I am sorry today feels heavy. No pressure, but here are a few small, kind things:"
+  },
+  {
+   "id": "lonely",
+   "label": "Lonely",
+   "priority": 1,
+   "words": "\\b(lonely|alone|isolated|left out|miss (him|her|them|my|people)|no one|nobody)\\b",
+   "cats": {
+    "social": 3,
+    "community": 3
+   },
+   "energy": {},
+   "msg": "Feeling lonely is hard, and more common than it looks. These might help you feel more connected:"
+  }
+ ],
+ "pools": {
+  "object": [
+   "a mug",
+   "your shoes",
+   "a houseplant",
+   "the view from your window",
+   "your own hand",
+   "a fruit bowl",
+   "a chair",
+   "your keys",
+   "a crumpled paper",
+   "a pair of glasses",
+   "a teapot",
+   "a tree outside"
+  ],
+  "colour": [
+   "red",
+   "yellow",
+   "blue",
+   "green",
+   "orange",
+   "purple",
+   "white",
+   "pink"
+  ],
+  "shape": [
+   "circles",
+   "triangles",
+   "stripes",
+   "spirals",
+   "waves",
+   "tiny houses",
+   "leaves"
+  ],
+  "place": [
+   "a nearby park",
+   "a lake or river bank",
+   "your rooftop or balcony",
+   "a quiet lane",
+   "a temple or church courtyard",
+   "a garden",
+   "a market street",
+   "a hill or viewpoint",
+   "a playground bench"
+  ],
+  "newplace": [
+   "café",
+   "bookshop",
+   "museum",
+   "street-food stall",
+   "library",
+   "gallery",
+   "bakery",
+   "plant nursery",
+   "old market"
+  ],
+  "person": [
+   "an old school friend",
+   "a cousin",
+   "a grandparent",
+   "a former colleague",
+   "a neighbour",
+   "your oldest friend",
+   "a teacher who helped you",
+   "a sibling",
+   "a college friend"
+  ],
+  "cuisine": [
+   "Gujarati",
+   "Bengali",
+   "Kerala",
+   "Punjabi",
+   "Rajasthani",
+   "Thai",
+   "Mexican",
+   "Italian",
+   "Lebanese",
+   "Japanese",
+   "Chettinad"
+  ],
+  "ingredient": [
+   "jaggery",
+   "fresh mint",
+   "coconut",
+   "sesame",
+   "lemon",
+   "roasted cumin",
+   "curry leaves",
+   "paneer",
+   "ginger",
+   "peanuts",
+   "tamarind",
+   "seasonal fruit"
+  ],
+  "genre": [
+   "old Bollywood",
+   "jazz",
+   "classical raga",
+   "lo-fi",
+   "folk",
+   "90s pop",
+   "Sufi",
+   "indie",
+   "ghazal",
+   "K-pop",
+   "instrumental"
+  ],
+  "skill": [
+   "juggling three balls",
+   "a simple card trick",
+   "folding an origami crane",
+   "three useful knots",
+   "whistling with two fingers",
+   "a coin-vanish trick",
+   "drawing a face in proportion",
+   "a basic beatbox rhythm"
+  ],
+  "language": [
+   "Japanese",
+   "Spanish",
+   "Tamil",
+   "French",
+   "Bengali",
+   "Korean",
+   "German",
+   "Marathi",
+   "Italian"
+  ],
+  "subject": [
+   "the stars you can see tonight",
+   "a historical figure you know little about",
+   "how bridges stay up",
+   "why the sky changes colour",
+   "the history of your city",
+   "a bird you often see",
+   "how your favourite food is made",
+   "the moon’s phases"
+  ],
+  "exercise": [
+   "squats",
+   "push-ups",
+   "lunges",
+   "plank holds",
+   "jumping jacks",
+   "stair climbs",
+   "skipping"
+  ],
+  "word": [
+   "home",
+   "rain",
+   "courage",
+   "Sunday",
+   "window",
+   "silence",
+   "monsoon",
+   "kindness",
+   "tomorrow"
+  ],
+  "game": [
+   "chess",
+   "carrom",
+   "Ludo",
+   "Uno",
+   "antakshari",
+   "charades",
+   "Pictionary",
+   "a crossword",
+   "cards"
+  ],
+  "item": [
+   "books",
+   "clothes",
+   "old cables",
+   "spices",
+   "photos",
+   "papers",
+   "shoes",
+   "mugs"
+  ],
+  "room": [
+   "your desk",
+   "one drawer",
+   "a bookshelf",
+   "your bag",
+   "the kitchen counter",
+   "your bedside table",
+   "your wardrobe shelf"
+  ],
+  "count": [
+   "3",
+   "5",
+   "7",
+   "10"
+  ],
+  "sound": [
+   "birds",
+   "traffic",
+   "wind",
+   "voices",
+   "your own breath",
+   "distant music"
+  ],
+  "gift": [
+   "a handwritten note",
+   "a small sketch",
+   "a homemade snack",
+   "a playlist",
+   "a printed photo"
+  ],
+  "few": [
+   "2",
+   "3",
+   "4"
+  ],
+  "area": [
+   "an old part of your city",
+   "a neighbourhood you rarely visit",
+   "a big local market",
+   "a riverside or lakeside path",
+   "a university campus",
+   "the streets around a railway station"
+  ]
+ },
+ "actions": [
+  {
+   "cat": "creative",
+   "t": "Sketch {object} without lifting your pen",
+   "d": "One continuous line, no erasing, no judging.",
+   "w": "Drawing makes you actually look, the opposite of scrolling.",
+   "s": [
+    "Grab any pen and paper",
+    "Draw {object} in one unbroken line",
+    "Date it and keep it"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "creative",
+   "t": "Make a picture using only {colour} things",
+   "d": "Gather {count} {colour} objects and arrange them into a little artwork.",
+   "w": "A playful creative puzzle with a real finish line.",
+   "s": [
+    "Collect {count} {colour} things around you",
+    "Arrange them on a table or floor",
+    "Photograph it, then put everything back"
+   ],
+   "dur": [
+    15,
+    30
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "creative",
+   "t": "Write a short poem called “{word}”",
+   "d": "Eight lines, any style, rhyming optional.",
+   "w": "Making something beats consuming something.",
+   "s": [
+    "Write the title at the top",
+    "Write eight lines without editing",
+    "Read it out loud once"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "creative",
+   "t": "Fill a page with {shape}",
+   "d": "Doodle nothing but {shape} until the page is full.",
+   "w": "Repetitive drawing is surprisingly calming.",
+   "s": [
+    "Pick any pen",
+    "Start in one corner",
+    "Keep going until the page is full"
+   ],
+   "dur": [
+    10,
+    25
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "creative",
+   "t": "Write a six-word story about {word}",
+   "d": "A whole story in exactly six words. Write five versions.",
+   "w": "Tiny, quick and oddly absorbing.",
+   "s": [
+    "Think about “{word}” for a minute",
+    "Write five six-word stories",
+    "Circle your favourite"
+   ],
+   "dur": [
+    5,
+    15
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "creative",
+   "t": "Make {gift} for someone",
+   "d": "Something small and handmade for a person you like.",
+   "w": "Making for someone else doubles the good feeling.",
+   "s": [
+    "Choose who it is for",
+    "Make it in one sitting",
+    "Give it this week"
+   ],
+   "dur": [
+    20,
+    45
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "outdoors",
+   "t": "Walk to {place} and sit for ten minutes",
+   "d": "No headphones. Just sit and notice.",
+   "w": "Your mind gets room to wander, which is where good ideas show up.",
+   "s": [
+    "Leave your phone in your pocket",
+    "Walk to {place}",
+    "Sit for ten minutes and notice three things"
+   ],
+   "dur": [
+    20,
+    45
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "outdoors",
+   "t": "Find {count} {colour} things on a walk",
+   "d": "A colour hunt around your neighbourhood.",
+   "w": "A small quest that makes ordinary streets interesting.",
+   "s": [
+    "Head out with no route",
+    "Spot {count} {colour} things",
+    "Photograph your favourite one"
+   ],
+   "dur": [
+    15,
+    30
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "outdoors",
+   "t": "Watch the sky from {place}",
+   "d": "Catch the light changing, at sunrise or sunset if you can.",
+   "w": "The best free show there is.",
+   "s": [
+    "Check the sunset time",
+    "Get to {place} a little early",
+    "Stay until the colours fade"
+   ],
+   "dur": [
+    20,
+    40
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "outdoors",
+   "t": "Listen for {sound} outside",
+   "d": "Stand still for ten minutes and pay attention to {sound}.",
+   "w": "Trains patient attention, and it is restful.",
+   "s": [
+    "Step outside",
+    "Close your eyes and listen for {sound}",
+    "Note what surprised you"
+   ],
+   "dur": [
+    10,
+    15
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "outdoors",
+   "t": "Take the long way to a {newplace}",
+   "d": "Pick a route you have never walked.",
+   "w": "New routes make familiar places feel new.",
+   "s": [
+    "Choose a {newplace} nearby",
+    "Take a street you never use",
+    "Get something small there"
+   ],
+   "dur": [
+    30,
+    60
+   ],
+   "e": 2,
+   "c": 1,
+   "set": "outdoor"
+  },
+  {
+   "cat": "social",
+   "t": "Send a voice note to {person}",
+   "d": "Thirty seconds of your real voice, saying you thought of them.",
+   "w": "Voice carries warmth that text cannot.",
+   "s": [
+    "Think of one memory you share",
+    "Record thirty seconds",
+    "Ask how they are"
+   ],
+   "dur": [
+    5,
+    10
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "social",
+   "t": "Call {person} for ten minutes",
+   "d": "No agenda, just say hi.",
+   "w": "One real conversation does more than an hour of feeds.",
+   "s": [
+    "Open with “I was just thinking about you”",
+    "Ask one question about their week",
+    "Suggest catching up again"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "social",
+   "t": "Invite someone for {cuisine} food this week",
+   "d": "Suggest a specific day and place.",
+   "w": "Plans with a time attached actually happen.",
+   "s": [
+    "Pick one person",
+    "Suggest a day and a place",
+    "Put it in your calendar"
+   ],
+   "dur": [
+    5,
+    10
+   ],
+   "e": 1,
+   "c": 1,
+   "set": "either"
+  },
+  {
+   "cat": "social",
+   "t": "Play {game} with someone at home",
+   "d": "Phones in another room, best of three.",
+   "w": "Shared play is one of the quickest ways to feel close.",
+   "s": [
+    "Invite someone",
+    "Set up {game}",
+    "Play best of three"
+   ],
+   "dur": [
+    20,
+    45
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "social",
+   "t": "Ask {person} about their favourite memory",
+   "d": "A message or call with one good question.",
+   "w": "People light up when asked about what matters to them.",
+   "s": [
+    "Message {person}",
+    "Ask: “What is a memory you still smile about?”",
+    "Share one of yours back"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "learning",
+   "t": "Learn {count} words in {language}",
+   "d": "Hello, thank you, and a few you like.",
+   "w": "Tiny, finishable learning with a real sense of progress.",
+   "s": [
+    "Look up {count} words in {language}",
+    "Say each one out loud three times",
+    "Use one today"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "learning",
+   "t": "Learn {skill}",
+   "d": "Practise until you can do it once without help.",
+   "w": "A new skill you can show someone tonight.",
+   "s": [
+    "Find one short guide",
+    "Practise in short tries",
+    "Show someone"
+   ],
+   "dur": [
+    15,
+    30
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "learning",
+   "t": "Read about {subject}, then explain it to someone",
+   "d": "Twenty minutes of reading, two minutes of teaching.",
+   "w": "Explaining something is the best way to learn it.",
+   "s": [
+    "Read one good article or chapter",
+    "Write three key points",
+    "Explain it to someone"
+   ],
+   "dur": [
+    20,
+    40
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "learning",
+   "t": "Read one chapter of a paper book",
+   "d": "Phone in another room, one chapter only.",
+   "w": "Deep attention is a muscle; this is a gentle workout.",
+   "s": [
+    "Pick a book",
+    "Read one chapter",
+    "Note one line worth remembering"
+   ],
+   "dur": [
+    20,
+    40
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "mindful",
+   "t": "Drink a cup of tea doing nothing else",
+   "d": "Make it slowly and drink it slowly.",
+   "w": "Ten quiet minutes of just one thing.",
+   "s": [
+    "Make the tea slowly",
+    "Sit somewhere comfortable",
+    "Notice the taste and warmth"
+   ],
+   "dur": [
+    10,
+    15
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "mindful",
+   "t": "Breathe in for 4 and out for 6, {count} times",
+   "d": "Slow breathing, sitting or lying down.",
+   "w": "Long out-breaths help your body settle.",
+   "s": [
+    "Sit or lie comfortably",
+    "Breathe in for 4, out for 6",
+    "Repeat {count} times"
+   ],
+   "dur": [
+    5,
+    10
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "mindful",
+   "t": "Write {count} things you are grateful for",
+   "d": "Small things count, like a good meal or a kind message.",
+   "w": "Gratitude written down sticks better.",
+   "s": [
+    "Grab paper or your Journal",
+    "Write {count} things",
+    "Read them back once"
+   ],
+   "dur": [
+    5,
+    10
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "mindful",
+   "t": "Do a slow body scan",
+   "d": "Move your attention from toes to head.",
+   "w": "A quick reset when your head feels noisy.",
+   "s": [
+    "Lie down",
+    "Notice each part of your body",
+    "Let your shoulders drop"
+   ],
+   "dur": [
+    5,
+    15
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "mindful",
+   "t": "Take a gratitude walk",
+   "d": "Walk and name one good thing every minute.",
+   "w": "Movement and a mood lift together.",
+   "s": [
+    "Start walking",
+    "Each minute, name one good thing",
+    "Save the best one in your Journal"
+   ],
+   "dur": [
+    15,
+    25
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "active",
+   "t": "Do {count} rounds of {exercise}",
+   "d": "Short rounds, rest between, at your own pace.",
+   "w": "Burns restless energy fast and leaves you clearer.",
+   "s": [
+    "Warm up for a minute",
+    "Do {count} short rounds of {exercise}",
+    "Stretch after"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 3,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "active",
+   "t": "Dance to {few} {genre} songs",
+   "d": "Door closed, volume up.",
+   "w": "A few songs can change your whole mood.",
+   "s": [
+    "Pick {few} {genre} songs",
+    "Move however you like",
+    "Notice how you feel after"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 3,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "active",
+   "t": "Walk briskly to {place}",
+   "d": "Fast enough to breathe a little harder.",
+   "w": "Restless energy gets somewhere useful to go.",
+   "s": [
+    "Shoes on",
+    "Walk briskly to {place}",
+    "Walk back slowly"
+   ],
+   "dur": [
+    20,
+    40
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "active",
+   "t": "Stretch for {min} minutes",
+   "d": "Neck, shoulders, back and hips, slowly.",
+   "w": "Undo the phone posture.",
+   "s": [
+    "Neck rolls",
+    "Shoulder and chest opener",
+    "Forward fold and hip stretch"
+   ],
+   "dur": [
+    5,
+    15
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "active",
+   "t": "Cycle to a {newplace} instead of riding",
+   "d": "Turn a short trip into movement.",
+   "w": "A chore becomes fresh air.",
+   "s": [
+    "Check your tyres",
+    "Cycle to a {newplace}",
+    "Take the scenic way back"
+   ],
+   "dur": [
+    30,
+    50
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "cooking",
+   "t": "Cook something new with {ingredient}",
+   "d": "A familiar dish with {ingredient} added.",
+   "w": "Small novelty and a result you can taste.",
+   "s": [
+    "Choose a dish you know",
+    "Add {ingredient}",
+    "Write down how it turned out"
+   ],
+   "dur": [
+    30,
+    50
+   ],
+   "e": 2,
+   "c": 1,
+   "set": "indoor"
+  },
+  {
+   "cat": "cooking",
+   "t": "Try a simple {cuisine} recipe",
+   "d": "Pick one dish from {cuisine} cooking you have never made.",
+   "w": "Learning through taste is the most fun kind.",
+   "s": [
+    "Find one recipe",
+    "Get the ingredients",
+    "Cook it and share it"
+   ],
+   "dur": [
+    40,
+    75
+   ],
+   "e": 2,
+   "c": 1,
+   "set": "indoor"
+  },
+  {
+   "cat": "cooking",
+   "t": "Make a fresh chutney with {ingredient}",
+   "d": "Quick, fresh and big on flavour.",
+   "w": "Big flavour from a few minutes of work.",
+   "s": [
+    "Gather {ingredient} and a few basics",
+    "Grind or chop it together",
+    "Have it with your next meal"
+   ],
+   "dur": [
+    15,
+    25
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "cooking",
+   "t": "Cook dinner for someone",
+   "d": "Something simple, made for another person.",
+   "w": "Feeding someone is one of the oldest ways to show care.",
+   "s": [
+    "Pick an easy dish",
+    "Invite them",
+    "Eat together, phones away"
+   ],
+   "dur": [
+    45,
+    75
+   ],
+   "e": 2,
+   "c": 1,
+   "set": "indoor"
+  },
+  {
+   "cat": "music",
+   "t": "Listen to a full {genre} album, lights off",
+   "d": "Start to finish, no skipping.",
+   "w": "Real listening is different from background noise.",
+   "s": [
+    "Choose an album",
+    "Lie down, lights off",
+    "Listen all the way through"
+   ],
+   "dur": [
+    30,
+    50
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "music",
+   "t": "Make a {genre} playlist for {person}",
+   "d": "Ten songs that remind you of them.",
+   "w": "A gift that says “I know you”.",
+   "s": [
+    "Pick ten songs",
+    "Put them in a good order",
+    "Send it with one line about why"
+   ],
+   "dur": [
+    15,
+    25
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "music",
+   "t": "Learn the chorus of a {genre} song",
+   "d": "Sing or play it until you know it by heart.",
+   "w": "Making music is more absorbing than consuming it.",
+   "s": [
+    "Pick a song",
+    "Learn it line by line",
+    "Perform it once, even to an empty room"
+   ],
+   "dur": [
+    15,
+    30
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "music",
+   "t": "Sing {few} songs out loud",
+   "d": "Full volume, every word.",
+   "w": "Singing releases tension and lifts your mood.",
+   "s": [
+    "Pick {few} songs",
+    "Close the door",
+    "Sing them all the way through"
+   ],
+   "dur": [
+    5,
+    15
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "community",
+   "t": "Help a neighbour with one small thing",
+   "d": "Carry something, water plants, or just ask.",
+   "w": "Belonging starts on your own street.",
+   "s": [
+    "Knock or message a neighbour",
+    "Offer one specific thing",
+    "Follow through"
+   ],
+   "dur": [
+    15,
+    30
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "community",
+   "t": "Give away {count} {item} you do not use",
+   "d": "Someone else could use them.",
+   "w": "A lighter home and a useful gift.",
+   "s": [
+    "Gather {count} {item}",
+    "Find a local donation spot or person",
+    "Drop them off this week"
+   ],
+   "dur": [
+    15,
+    30
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "community",
+   "t": "Pick up litter near {area}",
+   "d": "A bag, gloves and twenty minutes.",
+   "w": "Visible good you can see straight away.",
+   "s": [
+    "Grab a bag and gloves",
+    "Clean one stretch near {area}",
+    "Notice how it looks after"
+   ],
+   "dur": [
+    20,
+    30
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "community",
+   "t": "Thank a local worker in person",
+   "d": "A shopkeeper, guard, cleaner or teacher.",
+   "w": "People rarely hear how much they matter.",
+   "s": [
+    "Pick someone you see often",
+    "Say thank you and why",
+    "Learn their name if you do not know it"
+   ],
+   "dur": [
+    5,
+    10
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "home",
+   "t": "Reset {room} completely",
+   "d": "Empty it, wipe it, put back only what belongs.",
+   "w": "A visible win in minutes, and a calmer head.",
+   "s": [
+    "Take everything off or out",
+    "Wipe it clean",
+    "Put back only what you use"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "home",
+   "t": "Fix one small broken thing",
+   "d": "A loose handle, a wobbly chair, a dead bulb.",
+   "w": "A small repair is a big feeling of competence.",
+   "s": [
+    "Pick one broken thing",
+    "Find out how to fix it",
+    "Fix it"
+   ],
+   "dur": [
+    20,
+    40
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "home",
+   "t": "Sort your {item} into keep and give away",
+   "d": "Two piles, no maybes.",
+   "w": "Less clutter, more space to breathe.",
+   "s": [
+    "Gather all your {item}",
+    "Make two piles",
+    "Put the give-away pile by the door"
+   ],
+   "dur": [
+    15,
+    30
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "home",
+   "t": "Print a photo and put it on the wall",
+   "d": "One photo you love, off your phone.",
+   "w": "Memories you see daily beat ones buried in a gallery.",
+   "s": [
+    "Pick a photo",
+    "Print it",
+    "Stick or frame it somewhere visible"
+   ],
+   "dur": [
+    20,
+    40
+   ],
+   "e": 1,
+   "c": 1,
+   "set": "indoor"
+  },
+  {
+   "cat": "play",
+   "t": "Play {game}, best of three",
+   "d": "With anyone who is around.",
+   "w": "Strategy and laughter with someone across from you.",
+   "s": [
+    "Set up {game}",
+    "Invite someone",
+    "Play best of three"
+   ],
+   "dur": [
+    20,
+    45
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "play",
+   "t": "Fold a paper plane and fly it {count} times",
+   "d": "Try to beat your own distance each time.",
+   "w": "Silly, joyful and impossible while scrolling.",
+   "s": [
+    "Fold a plane",
+    "Fly it {count} times",
+    "Adjust the wings to go further"
+   ],
+   "dur": [
+    10,
+    20
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "either"
+  },
+  {
+   "cat": "play",
+   "t": "Invent a new rule for {game}",
+   "d": "Play one round with your house rule.",
+   "w": "Changing the rules makes an old game new.",
+   "s": [
+    "Pick {game}",
+    "Invent one new rule",
+    "Play a round with it"
+   ],
+   "dur": [
+    20,
+    40
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "play",
+   "t": "Fly a kite from {place}",
+   "d": "Find wind and open space.",
+   "w": "Outdoors, playful and hands-on.",
+   "s": [
+    "Get a kite",
+    "Head to {place}",
+    "Keep it up for ten minutes"
+   ],
+   "dur": [
+    30,
+    50
+   ],
+   "e": 2,
+   "c": 1,
+   "set": "outdoor"
+  },
+  {
+   "cat": "selfcare",
+   "t": "Take a long, unhurried shower",
+   "d": "Warm water, calm music, no rush.",
+   "w": "Simple care for your body counts.",
+   "s": [
+    "Put on calm music",
+    "Take your time",
+    "Moisturise after"
+   ],
+   "dur": [
+    15,
+    25
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "selfcare",
+   "t": "Phone out of the bedroom tonight",
+   "d": "Charge it in another room and read or rest.",
+   "w": "Sleep fixes more than most apps can.",
+   "s": [
+    "Charge your phone outside the bedroom",
+    "Read or rest",
+    "Lights out a little earlier"
+   ],
+   "dur": [
+    30,
+    60
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "selfcare",
+   "t": "Make yourself something warm with {ingredient}",
+   "d": "A comforting drink or snack, just for you.",
+   "w": "Looking after yourself is a skill worth practising.",
+   "s": [
+    "Choose something warm",
+    "Make it slowly",
+    "Eat or drink it at a table, no screen"
+   ],
+   "dur": [
+    10,
+    25
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "selfcare",
+   "t": "Write down what is worrying you",
+   "d": "Empty your head onto paper, then circle one thing you can act on.",
+   "w": "Worries shrink when they are written down.",
+   "s": [
+    "Write every worry",
+    "Circle the one you can act on",
+    "Pick one first step"
+   ],
+   "dur": [
+    10,
+    15
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "selfcare",
+   "t": "Take a 20-minute nap, guilt-free",
+   "d": "Alarm set, somewhere dark.",
+   "w": "Rest is productive.",
+   "s": [
+    "Set an alarm",
+    "Lie down somewhere dark",
+    "Get up slowly"
+   ],
+   "dur": [
+    20,
+    25
+   ],
+   "e": 1,
+   "c": 0,
+   "set": "indoor"
+  },
+  {
+   "cat": "explore",
+   "t": "Visit a {newplace} you have never tried",
+   "d": "Somewhere nearby you always pass.",
+   "w": "New places make time feel fuller and more memorable.",
+   "s": [
+    "Pick one within 20 minutes",
+    "Go without checking reviews",
+    "Save one memory from it"
+   ],
+   "dur": [
+    30,
+    60
+   ],
+   "e": 1,
+   "c": 1,
+   "set": "outdoor"
+  },
+  {
+   "cat": "explore",
+   "t": "Ride {count} stops further than usual",
+   "d": "Get off a bus or metro somewhere new and wander.",
+   "w": "Adventure is closer than you think.",
+   "s": [
+    "Take your usual route",
+    "Stay on for {count} more stops",
+    "Walk around for twenty minutes"
+   ],
+   "dur": [
+    45,
+    90
+   ],
+   "e": 2,
+   "c": 1,
+   "set": "outdoor"
+  },
+  {
+   "cat": "explore",
+   "t": "Wander {area} with no plan",
+   "d": "Turn whichever way looks interesting.",
+   "w": "Serendipity without an algorithm.",
+   "s": [
+    "Go to {area}",
+    "Follow whatever looks interesting",
+    "Note one thing you discovered"
+   ],
+   "dur": [
+    30,
+    60
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "outdoor"
+  },
+  {
+   "cat": "explore",
+   "t": "Find the oldest building near you",
+   "d": "Look for dates, old doors and faded signs.",
+   "w": "History in your own city gives perspective.",
+   "s": [
+    "Walk your area looking up",
+    "Find the oldest-looking building",
+    "Read one fact about it later"
+   ],
+   "dur": [
+    30,
+    50
+   ],
+   "e": 2,
+   "c": 0,
+   "set": "outdoor"
+  }
+ ]
+}

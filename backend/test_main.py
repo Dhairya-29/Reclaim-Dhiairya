@@ -38,7 +38,7 @@ def rules_provider():
 
 def test_health():
     r = client.get('/v1/health').json()
-    assert r['status'] == 'ok' and r['activities'] >= 90 and r['topics'] >= 13 and r['moods'] == 7
+    assert r['status'] == 'ok' and r['topics'] >= 13 and r['moods'] == 7 and r['ideas'] == 'generated in the app'
 
 
 # ---- mood check-in
@@ -54,20 +54,48 @@ def test_detect_mood_keywords(text, expected):
     assert asyncio.run(mood.detect_mood(text))['mood'] == expected
 
 
-def test_tapped_mood_wins_and_picks_fit():
-    r = client.post('/v1/activities/recommend', json={'mood': 'anxious', 'text': 'great day', 'interests': []}).json()
-    assert r['mood'] == 'anxious' and r['source'] == 'user' and len(r['activities']) == 3
-    cats = [a['cat'] for a in r['activities']]
-    assert cats[0] == 'mindful' and 'selfcare' in cats  # the mood's topics lead; variety fills the rest
-    assert r['message'] == mood.MOODS['anxious']['msg']  # rules provider: the mood's own message
+IDEA = {'title': 'Sketch your chai cup in one line', 'topic': 'creative', 'minutes': 10, 'cost': 0, 'energy': 1,
+        'setting': 'indoor', 'description': 'One pen line.', 'why': 'You look closely.', 'steps': ['Grab a pen', 'Draw']}
 
 
-def test_check_in_excludes_recent_and_uses_model_message():
-    main.app.state.provider = Fake('Sounds like a long day. These might help.')
-    first = client.post('/v1/activities/recommend', json={'text': 'exhausted'}).json()
-    again = client.post('/v1/activities/recommend', json={'text': 'exhausted', 'exclude_ids': [a['id'] for a in first['activities']]}).json()
-    assert first['message'] == 'Sounds like a long day. These might help.'
-    assert not {a['id'] for a in first['activities']} & {a['id'] for a in again['activities']}
+def model_json(*ideas, message='Sounds like a long day.'):
+    import json
+    return 'Sure! ' + json.dumps({'message': message, 'ideas': list(ideas)})
+
+
+def test_without_model_app_generates_ideas():
+    r = client.post('/v1/activities/recommend', json={'mood': 'anxious', 'text': 'great day'}).json()
+    assert r['mood'] == 'anxious' and r['source'] == 'user'  # the tapped mood wins over words
+    assert r['activities'] == [] and r['message'] == mood.MOODS['anxious']['msg']
+
+
+def test_model_ideas_are_parsed_and_sent_constraints():
+    main.app.state.provider = fake = Fake(model_json(IDEA, {**IDEA, 'title': 'Cook rajma', 'topic': 'cooking', 'minutes': 50}))
+    r = client.post('/v1/activities/recommend', json={'text': 'exhausted', 'filters': {'time': 20, 'setting': 'indoor'},
+                                                       'notes': ['Can’t go out right now'], 'avoid': ['Read a chapter'], 'n': 3}).json()
+    assert r['message'] == 'Sounds like a long day.' and r['mood'] == 'tired'
+    assert [a['title'] for a in r['activities']] == ['Sketch your chai cup in one line']  # 50-minute idea broke the 20-minute filter
+    assert r['activities'][0] == {'title': 'Sketch your chai cup in one line', 'cat': 'creative', 'dur': 10, 'cost': 0, 'energy': 1,
+                                  'setting': 'indoor', 'desc': 'One pen line.', 'why': 'You look closely.', 'steps': ['Grab a pen', 'Draw']}
+    prompt = fake.calls[0][1][0]['content']
+    assert 'at most 20 minutes' in prompt and 'indoors' in prompt and 'Can’t go out right now' in prompt and 'Read a chapter' in prompt
+
+
+@pytest.mark.parametrize('bad', [
+    {**IDEA, 'topic': 'skydiving'},                      # unknown topic
+    {**IDEA, 'title': 'read a chapter'},                 # in the avoid list (any case)
+    {**IDEA, 'description': 'Then stop taking your medication.'},
+    {k: v for k, v in IDEA.items() if k != 'title'},     # missing title
+])
+def test_bad_model_ideas_are_dropped(bad):
+    f = main.Filters()
+    assert main.parse_ideas(model_json(bad), f, {'read a chapter'}, 3)[1] == []
+
+
+def test_model_values_are_clamped_and_garbage_ignored():
+    _, ideas = main.parse_ideas(model_json({**IDEA, 'minutes': 999, 'cost': 9, 'energy': -2, 'setting': 'space', 'steps': []}), main.Filters(), set(), 3)
+    assert ideas[0]['dur'] == 180 and ideas[0]['cost'] == 2 and ideas[0]['energy'] == 1 and ideas[0]['setting'] == 'either' and ideas[0]['steps']
+    assert main.parse_ideas('no json here', main.Filters(), set(), 3) == ('', [])
 
 
 def test_check_in_crisis_skips_model():
@@ -83,9 +111,22 @@ def test_classifier_labels_map_to_moods(monkeypatch):
 
 
 # ---- companion
-def test_rules_reply_suggests_activity_for_mood():
-    r = client.post('/v1/chat', json={'message': 'I keep doomscrolling reels'}).json()
-    assert r['provider'] == 'rules' and r['activity_id'] in {a['id'] for a in mood.ACTIVITIES}
+CANDIDATE = {'id': 'g1', 'title': 'Stretch for 10 minutes', 'dur': 10, 'cat': 'active', 'setting': 'indoor', 'why': 'Undo the phone posture.'}
+
+
+def test_rules_reply_uses_the_apps_ideas():
+    r = client.post('/v1/chat', json={'message': 'I keep doomscrolling reels', 'context': {'ideas': [CANDIDATE]}}).json()
+    assert r['provider'] == 'rules' and r['activity_id'] == 'g1' and 'Stretch' in r['reply']
+
+
+def test_chat_sees_notes_and_candidates():
+    main.app.state.provider = fake = Fake('Stay in and stretch.\n[[activity:g1]]')
+    r = client.post('/v1/chat', json={'message': 'something else', 'history': [{'role': 'user', 'content': 'I keep doomscrolling'}, {'role': 'assistant', 'content': 'Try a swim?'}],
+                                      'context': {'notes': ['Can’t go out right now'], 'ideas': [CANDIDATE]}}).json()
+    system, messages = fake.calls[0]
+    assert 'Can’t go out right now' in system and 'g1: Stretch for 10 minutes' in system
+    assert [m['content'] for m in messages] == ['I keep doomscrolling', 'Try a swim?', 'something else']  # whole session is sent
+    assert r['activity_id'] == 'g1' and r['reply'] == 'Stay in and stretch.'
 
 
 def test_crisis_is_deterministic():
@@ -100,9 +141,9 @@ def test_unsafe_model_reply_is_replaced():
 
 
 def test_activity_tag_parsed_and_validated():
-    main.app.state.provider = fake = Fake('Try a walk.\n[[activity:a1]]')
-    r = client.post('/v1/chat', json={'message': 'bored', 'history': [{'role': 'assistant', 'content': 'hi'}]}).json()
-    assert r['reply'] == 'Try a walk.' and r['activity_id'] in (None, 'a1')
+    main.app.state.provider = fake = Fake('Try a walk.\n[[activity:g1]]')
+    r = client.post('/v1/chat', json={'message': 'bored', 'history': [{'role': 'assistant', 'content': 'hi'}], 'context': {'ideas': [CANDIDATE]}}).json()
+    assert r['reply'] == 'Try a walk.' and r['activity_id'] == 'g1'
     assert fake.calls[0][1][0]['role'] == 'user'  # leading assistant turn dropped
     main.app.state.provider = Fake('Nice.\n[[activity:zzz]]')
     assert client.post('/v1/chat', json={'message': 'x'}).json()['activity_id'] is None
@@ -181,6 +222,5 @@ def test_ollama_request_strips_thinking_and_maps_errors():
         asyncio.run(p.complete('SYS', []))
 
 
-def test_picks_are_varied_across_topics():
-    picks = mood.recommend(['creative'], 'tired')
-    assert len({a['cat'] for a in picks}) == 3
+def test_long_notes_are_rejected():
+    assert client.post('/v1/activities/recommend', json={'notes': ['x' * 500]}).status_code == 422

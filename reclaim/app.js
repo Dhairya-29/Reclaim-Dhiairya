@@ -44,8 +44,10 @@ const KEY = 'reclaim.v1';
 const fresh = () => ({
   onboarded: false,
   prefs: { name: '', interests: [], theme: 'system', apiUrl: '', presets: DEFAULT_PRESETS.map(p => ({ ...p })) },
-  ui: { tab: 'today', lifeSeg: 'journal', filters: { time: 0, energy: 0, budget: 'any', setting: 'any', interest: 'any' }, page: 0, convoId: null, q: '' },
-  moods: {}, today: { date: '', i: 0 }, checkin: null,
+  ui: { tab: 'today', lifeSeg: 'journal', filters: { time: 0, energy: 0, budget: 'any', setting: 'any', interest: 'any' }, disc: null, convoId: null, q: '' },
+  moods: {}, today: { date: '', i: 0, ids: null }, checkin: null,
+  ideas: {}, // every generated idea that was shown, by id, so history and buttons can find it again
+  notes: [], // what the companion remembers about you across chats (see learnFrom in data.js)
   history: [], streams: [], memories: [], people: [], projects: [], convos: []
 });
 let S;
@@ -176,29 +178,38 @@ function toast(msg, undo) {
   toastT = setTimeout(() => t.classList.remove('show'), undo ? 5000 : 2600);
 }
 
-/* ---------------- Recommendations ---------------- */
-const hash = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
-function score(a, mood) {
-  let s = S.prefs.interests.includes(a.cat) ? 2 : 0;
-  s -= S.history.filter(h => h.activityId === a.id && Date.now() - h.ts < 3 * 864e5).length * 3;
-  const m = MOODS.find(x => x.id === mood);
-  if (m) s += (m.cats[a.cat] || 0) + (m.energy[a.energy] || 0);
-  return s + (Math.abs(hash(a.id + dayKey())) % 100) / 100;
-}
-const ranked = (list, mood) => [...list].sort((a, b) => score(b, mood) - score(a, mood));
-// Best n, but one per topic first so the picks feel different from each other (same rule as the API).
-function varied(list, n = 3) {
-  const picks = [], seen = new Set();
-  for (const a of list) if (picks.length < n && !seen.has(a.cat)) { picks.push(a); seen.add(a.cat); }
-  return [...picks, ...list.filter(a => !picks.includes(a))].slice(0, n);
-}
-const actById = id => ACTIVITIES.find(a => a.id === id);
+/* ---------------- Ideas (generated fresh, never a fixed list) ---------------- */
+const actById = id => S.ideas[id];
 const activeRun = () => S.history.find(h => h.state === 'started');
-function matches(a, f) {
-  return (!f.time || a.dur <= f.time) && (!f.energy || a.energy <= f.energy) &&
-    (f.budget === 'any' || a.cost <= (f.budget === 'free' ? 0 : 1)) &&
-    (f.setting === 'any' || a.setting === f.setting || a.setting === 'either') &&
-    (f.interest === 'any' || a.cat === f.interest);
+// Store shown ideas; keep the last 100 plus anything history, memories or today still point to.
+function keepIdeas(list) {
+  for (const a of list) { a.id ||= 'g' + uid(); S.ideas[a.id] = a; }
+  const ids = Object.keys(S.ideas);
+  if (ids.length > 150) {
+    const used = new Set([...S.history.map(h => h.activityId), ...S.memories.map(m => m.activityId), ...(S.today.ids || []), ...(S.checkin?.ids || []), ...(S.ui.disc?.rounds.flat() || []), ...list.map(a => a.id)]);
+    ids.slice(0, -100).forEach(id => used.has(id) || delete S.ideas[id]);
+  }
+  save();
+  return list;
+}
+// Titles done or skipped in the last 3 days, so new ideas don't repeat them.
+const recentTitles = () => S.history.filter(h => Date.now() - h.ts < 3 * 864e5).map(h => actById(h.activityId)?.title).filter(Boolean);
+// What you've told the companion (e.g. "can't go out") applies unless a filter you picked says otherwise.
+const withMemory = filters => ({ ...memoryFilters(S.notes), ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v && v !== 'any')) });
+// Fresh ideas: the AI server invents them when connected (8s budget), otherwise the on-device generator does.
+async function fetchIdeas({ mood, text = '', filters = {}, n = 3, avoid = [] }) {
+  const f = withMemory(filters);
+  avoid = [...avoid, ...recentTitles()].slice(-40);
+  if (S.prefs.apiUrl && navigator.onLine) {
+    try {
+      const r = await apiFetch('/v1/activities/recommend', { mood, text, interests: S.prefs.interests, filters: f, avoid, notes: S.notes.map(x => x.text), n }, AbortSignal.timeout(8000));
+      if (r.safety_triggered) return { safety: true, message: r.message, ideas: [] };
+      const ideas = r.activities?.length ? r.activities : generateIdeas({ mood: r.mood, interests: S.prefs.interests, filters: f, n, avoid });
+      return { mood: r.mood, message: r.message, ideas: keepIdeas(ideas) };
+    } catch {}
+  }
+  mood = mood || (text && detectMood(text)) || (text ? 'calm' : undefined);
+  return { mood, message: MOODS.find(m => m.id === mood)?.msg, ideas: keepIdeas(generateIdeas({ mood, interests: S.prefs.interests, filters: f, n, avoid })) };
 }
 const costLabel = c => ['Free', 'Low cost', 'Some cost'][c];
 const energyLabel = e => ['', 'Low energy', 'Some energy', 'High energy'][e];
@@ -210,13 +221,17 @@ function whyFits(a) {
 const todayMood = () => S.moods[dayKey()];
 const moodLabel = id => MOODS.find(m => m.id === id)?.label.toLowerCase() || id;
 function todayPicks() {
-  if (S.today.date !== dayKey()) { S.today = { date: dayKey(), i: 0 }; save(); }
+  if (S.today.date !== dayKey()) S.today = { date: dayKey(), i: 0, ids: null };
   const c = S.checkin;
   const fromCheckin = c?.date === dayKey() ? c.ids.map(actById).filter(Boolean) : [];
-  return fromCheckin.length ? fromCheckin : varied(ranked(ACTIVITIES, todayMood()));
+  if (fromCheckin.length) return fromCheckin;
+  let picks = (S.today.ids || []).map(actById).filter(Boolean);
+  if (!picks.length) {
+    picks = keepIdeas(generateIdeas({ mood: todayMood(), interests: S.prefs.interests, filters: withMemory({}), avoid: recentTitles() }));
+    S.today.ids = picks.map(a => a.id); save();
+  }
+  return picks;
 }
-// Activities done or skipped in the last 3 days, so check-ins suggest something new.
-const recentIds = () => S.history.filter(h => Date.now() - h.ts < 3 * 864e5).map(h => h.activityId);
 
 /* ---------------- Views ---------------- */
 const V = {};
@@ -277,27 +292,43 @@ const FILTERS = [
   ['setting', 'Where', [['any', 'Anywhere'], ['indoor', 'Indoor'], ['outdoor', 'Outdoor']]],
   ['interest', 'Interest', [['any', 'All'], ...INTERESTS]]
 ];
+const ROUNDS = 3;
+const discKey = () => JSON.stringify([S.ui.filters, dayKey(), todayMood() || '']);
+let discLoading = false;
+async function loadDiscover(fresh) {
+  if (discLoading) return;
+  discLoading = true;
+  if (fresh || S.ui.disc?.key !== discKey()) S.ui.disc = { key: discKey(), rounds: [], page: 0 };
+  const d = S.ui.disc;
+  if (S.ui.tab === 'discover' && !screens.length) refresh();
+  const { ideas } = await fetchIdeas({ mood: todayMood(), filters: S.ui.filters, avoid: d.rounds.flat().map(id => actById(id)?.title).filter(Boolean) });
+  d.rounds.push(ideas.map(a => a.id)); d.page = d.rounds.length - 1;
+  discLoading = false; save();
+  if (S.ui.tab === 'discover' && !screens.length) refresh();
+}
 V.discover = () => {
-  const f = S.ui.filters;
-  const list = ranked(ACTIVITIES.filter(a => matches(a, f)), todayMood());
-  const start = S.ui.page * 3;
-  const shown = list.slice(start, start + 3);
-  const more = start + 3 < list.length;
+  const f = S.ui.filters, d = S.ui.disc;
+  const ready = d?.key === discKey() && d.rounds.length && !discLoading;
+  if (!ready && !discLoading) queueMicrotask(() => loadDiscover());
+  const shown = ready ? d.rounds[d.page].map(actById).filter(Boolean) : [];
+  const last = ready && d.page === d.rounds.length - 1;
   return `<section class="page">
     <div class="page-head"><h1 class="serif">Discover</h1></div>
     ${FILTERS.map(([k, l, opts]) => `<div class="label" style="margin-top:10px">${l}</div><div class="chips scroll" data-keep="f-${k}">${opts.map(([v, t]) => `<button class="chip" data-a="filter" data-v="${k}:${v}" aria-pressed="${String(f[k]) === String(v)}">${t}</button>`).join('')}</div>`).join('')}
     <div class="divider"></div>
-    <div class="muted small" style="margin-bottom:12px">${list.length ? `Ideas ${start + 1}–${start + shown.length} of ${list.length}` : 'No ideas match'}</div>
+    <div class="muted small" style="margin-bottom:12px">${ready ? `Fresh ideas · round ${d.page + 1} of ${ROUNDS}` : 'Finding fresh ideas…'}</div>
     <div class="rise" id="results">
-      ${shown.map(a => `<article class="card tap" data-a="activity" data-v="${a.id}">
+      ${!ready ? `<div class="generating" style="min-height:180px"><div class="big" aria-hidden="true">🌱</div><p class="muted">Thinking up something new<span class="dots"></span></p></div>`
+      : shown.map(a => `<article class="card tap" data-a="activity" data-v="${a.id}">
         <h3 class="serif" style="font-size:21px;line-height:1.2">${esc(a.title)}</h3>
         <p style="margin:6px 0">${esc(a.desc)}</p>
         <p class="muted small" style="margin:0"><b>Why it may fit:</b> ${esc(whyFits(a))}</p>
         ${metaPills(a)}
       </article>`).join('') || `<div class="empty"><div class="serif">Nothing fits all of those.</div>Try loosening one filter.</div>`}
     </div>
-    ${list.length ? (more ? `<button class="btn soft block" data-a="morePage">Show 3 different ideas</button>`
-      : `<div class="empty" style="padding:16px"><div class="serif" style="font-size:18px">That is every idea for these filters.</div>Pick one that feels good — or <button class="btn ghost" data-a="resetPage">start over</button></div>`) : ''}
+    ${ready && shown.length ? (!last ? `<button class="btn soft block" data-a="morePage">Next</button>`
+      : d.rounds.length < ROUNDS ? `<button class="btn soft block" data-a="morePage">Show 3 different ideas</button>`
+      : `<div class="empty" style="padding:16px"><div class="serif" style="font-size:18px">That is plenty of ideas for now.</div>Pick one that feels good. <button class="btn ghost" data-a="resetPage">Back to the first ones</button></div>`) : ''}
   </section>`;
 };
 
@@ -635,11 +666,9 @@ function currentConvo(create = true) {
   return c;
 }
 const companionCtx = {
-  suggest(intent) {
-    const mood = MOODS.some(m => m.id === intent) ? intent : intent === 'scroll' ? 'restless' : todayMood();
-    return ranked(ACTIVITIES, mood)[0];
-  },
-  person() { return [...S.people].sort((a, b) => (a.last || 0) - (b.last || 0))[0]; }
+  suggest: ({ mood, filters = {}, avoid = [] } = {}) => keepIdeas(generateIdeas({ mood: mood || todayMood(), interests: S.prefs.interests, filters: withMemory(filters), n: 1, avoid: [...avoid, ...recentTitles()] }))[0],
+  person: () => [...S.people].sort((a, b) => (a.last || 0) - (b.last || 0))[0],
+  ideaById: actById
 };
 async function apiFetch(path, body, signal, method = body ? 'POST' : 'GET') {
   const url = S.prefs.apiUrl.replace(/\/+$/, '') + path;
@@ -662,17 +691,21 @@ async function reply(c, text) {
     if (useApi) {
       // History excludes the message just sent (it goes in `message`) and any failed turns.
       const history = c.messages.slice(0, -1).filter(x => x.state !== 'error' && x.content).slice(-12).map(({ role, content }) => ({ role, content }));
-      const r = await apiFetch('/v1/chat', { mode: 'companion', conversation_id: c.id, message: text, history, context: { name: S.prefs.name, interests: S.prefs.interests, mood: todayMood() || null } }, controller.signal);
+      // Fresh candidates that respect what they've told us, plus the notes themselves, so replies build on earlier chats.
+      const notes = remember(S.notes, learnFrom(text));
+      const ideas = keepIdeas(generateIdeas({ mood: todayMood(), interests: S.prefs.interests, filters: withMemory(memoryFilters(notes)), avoid: recentTitles() }));
+      const r = await apiFetch('/v1/chat', { mode: 'companion', conversation_id: c.id, message: text, history, context: { name: S.prefs.name, interests: S.prefs.interests, mood: todayMood() || null, notes: notes.map(x => x.text), ideas: ideas.map(({ id, title, dur, cat, setting, why }) => ({ id, title, dur, cat, setting, why })) } }, controller.signal);
       const act = r.activity_id && actById(r.activity_id);
-      m = { content: String(r.reply || ''), actions: act ? [{ label: `Try: ${act.title}`, a: 'activity', v: act.id }] : [], remote: true };
+      m = { content: String(r.reply || ''), actions: act ? [{ label: `Try: ${act.title}`, a: 'activity', v: act.id }] : [], remote: true, learned: learnFrom(text) };
     } else {
       await new Promise((res, rej) => {
         const t = setTimeout(res, 500 + Math.random() * 600);
         controller.signal.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('stopped', 'AbortError')); });
       });
-      m = localReply(text, companionCtx);
+      m = localReply(text, { ...companionCtx, history: c.messages.slice(0, -1), notes: S.notes });
     }
     c.messages.push({ id: uid(), role: 'assistant', content: m.content, actions: m.actions, ts: Date.now(), state: 'sent', remote: !!m.remote });
+    S.notes = remember(S.notes, m.learned || []);
   } catch (err) {
     if (err.name === 'AbortError' && controller.signal.aborted) {
       const last = c.messages.at(-1); if (last) last.state = 'stopped';
@@ -745,15 +778,10 @@ function reflect(run, a) {
 /* ---------------- Mood check-in (every time the app opens) ---------------- */
 async function moodSuggestions(mood, text) {
   if (text && CRISIS.test(text)) return { safety: true, message: localReply(text, companionCtx).content, ids: [] };
-  if (S.prefs.apiUrl && navigator.onLine) {
-    try { // a sleeping free server can take ~50s to wake; don't make anyone wait for it
-      const r = await apiFetch('/v1/activities/recommend', { mood, text, interests: S.prefs.interests, exclude_ids: recentIds() }, AbortSignal.timeout(8000));
-      return { mood: r.mood, message: r.message, ids: r.activities.map(a => a.id), safety: r.safety_triggered };
-    } catch {}
-  }
-  mood = mood || detectMood(text) || 'calm';
-  const recent = new Set(recentIds());
-  return { mood, message: MOODS.find(m => m.id === mood).msg, ids: varied(ranked(ACTIVITIES.filter(a => !recent.has(a.id)), mood)).map(a => a.id) };
+  const r = await fetchIdeas({ mood, text });
+  if (r.safety) return { safety: true, message: r.message, ids: [] };
+  mood = r.mood || mood || 'calm';
+  return { mood, message: r.message || MOODS.find(m => m.id === mood).msg, ids: r.ideas.map(a => a.id) };
 }
 function checkIn() {
   if (!MOODS.length || $('#sheet-root').children.length) return;
@@ -805,7 +833,7 @@ function mindfulPause() {
   phases.forEach(([cls, text, ms]) => { timers.push(setTimeout(() => { if (closed) return; b.className = 'breath ' + (cls === 'hold' ? 'in' : cls); w.textContent = text; haptic(cls === 'hold' ? 0 : 10); }, t)); t += ms; });
   timers.push(setTimeout(() => {
     if (closed) return;
-    const a = ranked(ACTIVITIES.filter(x => x.dur <= 20), todayMood())[0];
+    const a = companionCtx.suggest({ filters: { time: 20 } });
     el.innerHTML = `<div class="serif" style="font-size:30px">Welcome back.</div><p style="max-width:300px;opacity:.85;margin:0">Still want to scroll? Or maybe: <b>${esc(a.title)}</b> — ${a.dur} minutes.</p><div class="row"><button class="btn soft" data-p="try" data-id="${a.id}">Try it</button><button class="btn soft" data-p="close">Close</button></div>`;
   }, t));
   el.addEventListener('click', async e => {
@@ -987,7 +1015,7 @@ const A = {
     S.prefs.name = $('#obName').value.trim(); S.onboarded = true; save();
     paint('fade'); setTimeout(checkIn, reduced ? 0 : 500);
   },
-  mood(v) { S.moods[dayKey()] = todayMood() === v ? undefined : v; S.checkin = null; S.today.i = 0; save(); refresh(); if (todayMood()) toast('Thanks — noted.'); },
+  mood(v) { S.moods[dayKey()] = todayMood() === v ? undefined : v; S.checkin = null; S.today.ids = null; S.today.i = 0; save(); refresh(); if (todayMood()) toast('Thanks — noted.'); },
   anotherIdea() { S.today.i = (S.today.i + 1) % 3; save(); refresh(); },
   activity: v => openActivity(v),
   pause: () => mindfulPause(),
@@ -998,9 +1026,13 @@ const A = {
     addEntry(st, { type: 'text', text: t }); toast('Saved to your Journal.');
   },
   viewMemory: v => viewMemory(v),
-  filter(v) { const [k, val] = v.split(':'); S.ui.filters[k] = isNaN(+val) ? val : +val; S.ui.page = 0; save(); refresh(); },
-  morePage() { S.ui.page++; save(); refresh(); $('#results')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); },
-  resetPage() { S.ui.page = 0; save(); refresh(); },
+  filter(v) { const [k, val] = v.split(':'); S.ui.filters[k] = isNaN(+val) ? val : +val; save(); refresh(); },
+  morePage() {
+    const d = S.ui.disc;
+    if (d.page < d.rounds.length - 1) { d.page++; save(); refresh(); } else loadDiscover();
+    $('#results')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  },
+  resetPage() { S.ui.disc.page = 0; save(); refresh(); },
   seg(v) {
     S.ui.lifeSeg = v; save();
     const idx = SEGS.findIndex(([k]) => k === v);
@@ -1204,11 +1236,13 @@ const A = {
   convoMenu() {
     sheet(`<h2>Conversation</h2><p class="muted small">Conversations are stored only on this phone.</p>
       <button class="option" data-m="new"><span class="ico">✨</span>New conversation</button>
+      <button class="option" data-m="memory"><span class="ico">🧠</span>What I remember (${S.notes.length})</button>
       <button class="option" data-m="del" style="color:#B3473A"><span class="ico">🗑️</span>Delete this conversation</button>`, {
       onMount: s => s.addEventListener('click', async ev => {
         const m = ev.target.closest('[data-m]')?.dataset.m; if (!m) return;
         await popLayer(); chatPending?.controller.abort();
         if (m === 'new') { S.ui.convoId = null; save(); refresh(); }
+        if (m === 'memory') showMemory();
         if (m === 'del') {
           const c = currentConvo(false); if (!c) return;
           S.convos = S.convos.filter(x => x !== c); S.ui.convoId = null; save(); refresh();
@@ -1243,7 +1277,7 @@ const A = {
   async clearConvos() {
     if (!(await ask('Delete all conversations?', 'This cannot be undone.', 'Delete'))) return;
     if (S.prefs.apiUrl) S.convos.forEach(c => apiFetch(`/v1/conversations/${c.id}`, null, null, 'DELETE').catch(() => {}));
-    S.convos = []; S.ui.convoId = null; save(); toast('Conversations deleted.');
+    S.convos = []; S.notes = []; S.ui.convoId = null; save(); toast('Conversations and companion memory deleted.');
   },
   async wipe() {
     if (!(await ask('Delete everything?', 'All journal streams, recordings, memories, people, projects and settings will be erased from this phone.', 'Delete everything'))) return;
@@ -1251,6 +1285,18 @@ const A = {
   }
 };
 
+function showMemory() {
+  const list = () => S.notes.length ? S.notes.map(n => `<div class="list-item"><div class="grow">${esc(n.text)}<div class="small muted">${n.until ? 'For now' : 'Kept until you delete it'}</div></div><button class="icon-btn" data-forget="${esc(n.key)}" aria-label="Forget ${esc(n.text)}">${I.x}</button></div>`).join('')
+    : '<div class="empty">Nothing yet. As you chat, I note things like “can’t go out right now” or what you enjoy, so suggestions fit you better.</div>';
+  sheet(`<h2>What I remember</h2><p class="muted small">From your chats, kept only on this phone. It shapes ideas and replies.</p><div class="card" id="memList">${list()}</div>
+    <button class="btn soft danger block" id="forgetAll">Forget everything</button>`, {
+    onMount: s => s.addEventListener('click', e => {
+      const f = e.target.closest('[data-forget]');
+      if (f) { S.notes = S.notes.filter(n => n.key !== f.dataset.forget); save(); s.querySelector('#memList').innerHTML = list(); }
+      if (e.target.id === 'forgetAll') { S.notes = []; save(); s.querySelector('#memList').innerHTML = list(); toast('Forgotten.'); }
+    })
+  });
+}
 function shareText(title, text) {
   if (navigator.share) navigator.share({ title, text }).catch(() => {});
   else navigator.clipboard?.writeText(text).then(() => toast('Copied to clipboard.'));
@@ -1303,8 +1349,8 @@ document.addEventListener('visibilitychange', () => {
 applyTheme();
 S.ui.tab = 'today'; // every launch starts calm, on Today
 history.replaceState({ n: 0 }, '');
-fetch('activities.json').then(r => r.json()).then(d => { INTERESTS = d.topics; ACTIVITIES = d.activities; MOODS = d.moods; }).catch(() => {
-  document.body.insertAdjacentHTML('beforeend', '<p class="empty">Could not load activities. Check your connection and reopen Reclaim.</p>');
+fetch('ideas.json').then(r => r.json()).then(d => { INTERESTS = d.topics; MOODS = d.moods; IDEA_PARTS = { pools: d.pools, actions: d.actions }; }).catch(() => {
+  document.body.insertAdjacentHTML('beforeend', '<p class="empty">Could not load ideas. Check your connection and reopen Reclaim.</p>');
 }).finally(boot);
 function boot() {
 $('#app').innerHTML = render(); afterRender('none');

@@ -1,8 +1,8 @@
-"""Mood detection and mood-aware activity picks, driven by the shared catalogue (reclaim/activities.json).
+"""Mood detection, driven by the moods in the shared reclaim/ideas.json (ideas themselves are generated, not listed).
 
 Detection order: the mood the user tapped -> mood keywords in their words -> the optional
-GoEmotions classifier -> "calm" (marked uncertain). Moods, their keywords and how they weight
-activities all live in activities.json, so the app and the API always agree.
+GoEmotions classifier -> "calm" (marked uncertain). Moods and their keywords live in ideas.json,
+so the app and the API always agree.
 
 Optional classifier (CPU, ~1.5 GB RAM; too big for Render's free plan):
   pip install -r requirements-ml.txt
@@ -21,8 +21,7 @@ from typing import Optional
 
 log = logging.getLogger('reclaim.mood')
 
-CATALOG = json.loads(Path(os.getenv('ACTIVITIES_PATH', Path(__file__).parent.parent / 'reclaim' / 'activities.json')).read_text(encoding='utf8'))
-ACTIVITIES = CATALOG['activities']
+CATALOG = json.loads(Path(os.getenv('IDEAS_PATH', Path(__file__).parent.parent / 'reclaim' / 'ideas.json')).read_text(encoding='utf8'))
 TOPICS = dict(CATALOG['topics'])
 MOODS = {m['id']: m for m in CATALOG['moods']}
 _BY_PRIORITY = [(m['id'], re.compile(m['words'], re.I)) for m in sorted(CATALOG['moods'], key=lambda m: m['priority'])]
@@ -36,27 +35,6 @@ GO_EMOTIONS = {
     **dict.fromkeys(['fear', 'nervousness', 'confusion'], 'anxious'),
     **dict.fromkeys(['anger', 'annoyance', 'disgust', 'disapproval'], 'restless'),
 }
-
-
-def recommend(interests: list[str], mood: Optional[str], exclude: set[str] = frozenset(), limit: int = 3) -> list[dict]:
-    """Same scoring as the app: liked topics +2, plus the mood's topic and energy weights."""
-    m = MOODS.get(mood, {})
-
-    def score(a):
-        return (2 if a['cat'] in interests else 0) + m.get('cats', {}).get(a['cat'], 0) + m.get('energy', {}).get(str(a['energy']), 0)
-
-    ranked = sorted((a for a in ACTIVITIES if a['id'] not in exclude), key=score, reverse=True)
-    return varied(ranked, limit)
-
-
-def varied(ranked: list[dict], n: int) -> list[dict]:
-    """Best n, but one per topic first so the picks feel different from each other."""
-    picks, seen = [], set()
-    for a in ranked:
-        if len(picks) < n and a['cat'] not in seen:
-            picks.append(a)
-            seen.add(a['cat'])
-    return picks + [a for a in ranked if a not in picks][:n - len(picks)]
 
 
 class EmotionClassifier:

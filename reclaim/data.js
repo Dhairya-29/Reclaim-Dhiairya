@@ -1,10 +1,39 @@
 // Curated catalogue + on-device (rule-based) companion, questions and drafts.
 // Works offline; a server URL in Settings upgrades replies to a real model.
 
-// Activities, topics and moods live in activities.json (shared with the backend) and load at boot.
-let ACTIVITIES = [];
+// Topics, moods and idea building blocks live in ideas.json (shared with the backend) and load at boot.
 let INTERESTS = [];
 let MOODS = [];
+let IDEA_PARTS = { pools: {}, actions: [] };
+
+// ---- Random ideas: an action template + random fillers ({place}, {person}, {ingredient}...), never a fixed list.
+// filters: { time, energy, budget, setting, interest } like Discover's; avoid: titles not to repeat.
+function generateIdeas({ mood, interests = [], filters = {}, n = 3, avoid = [] } = {}) {
+  const m = MOODS.find(x => x.id === mood) || { cats: {}, energy: {} };
+  const f = { time: 0, energy: 0, budget: 'any', setting: 'any', interest: 'any', ...filters };
+  const pool = IDEA_PARTS.actions.filter(t => (!f.time || t.dur[0] <= f.time) && (!f.energy || t.e <= f.energy) &&
+    (f.budget === 'any' || t.c <= (f.budget === 'free' ? 0 : 1)) &&
+    (f.setting === 'any' || t.set === f.setting || t.set === 'either') && (f.interest === 'any' || t.cat === f.interest));
+  const weight = t => Math.max(0.2, 1 + (interests.includes(t.cat) ? 2 : 0) + (m.cats[t.cat] || 0) + (m.energy[t.e] || 0));
+  const seen = new Set(avoid.map(a => a.toLowerCase())), cats = new Set(), out = [];
+  for (let tries = 0; out.length < n && pool.length && tries < 80; tries++) {
+    const fresh = pool.filter(t => !cats.has(t.cat)); // one per topic first, for variety
+    const from = fresh.length ? fresh : pool;
+    let r = Math.random() * from.reduce((sum, t) => sum + weight(t), 0);
+    const t = from.find(x => (r -= weight(x)) < 0) || from[0];
+    const idea = fillIdea(t, f.time);
+    if (seen.has(idea.title.toLowerCase())) continue;
+    seen.add(idea.title.toLowerCase()); cats.add(t.cat); out.push(idea);
+  }
+  return out;
+}
+function fillIdea(t, maxTime) {
+  const hi = maxTime ? Math.min(t.dur[1], maxTime) : t.dur[1];
+  const dur = Math.min(hi, Math.max(t.dur[0], Math.round((t.dur[0] + Math.random() * (hi - t.dur[0])) / 5) * 5));
+  const chosen = { min: String(dur) };
+  const sub = str => str.replace(/\{(\w+)\}/g, (_, k) => (chosen[k] ??= pick(IDEA_PARTS.pools[k] || [k])));
+  return { title: capital(sub(t.t)), cat: t.cat, dur, cost: t.c, energy: t.e, setting: t.set, desc: sub(t.d), why: sub(t.w), steps: t.s.map(sub) };
+}
 
 // Best guess at a mood from someone's own words, using each mood's keywords (same rules as the API).
 function detectMood(text) {
@@ -160,6 +189,37 @@ function localDraft(stream, preset, custom) {
   }
 }
 
+// ---- Companion memory: things people say about their situation or tastes, kept across chats.
+// Situations (can't go out, short on time...) fade after a few hours; likes and dislikes stay until deleted.
+const HOURS = 36e5;
+const LEARN = [
+  { key: 'indoor', re: /\b((can'?t|cannot|unable to|not able to) (go|get|step) (out|outside)|(stuck|staying) (at|in) (home|the house|my room)|it'?s raining|at work|in (the )?office|at my desk|in class)\b/i, note: 'Can’t go out right now', say: 'you can’t go out right now', set: { setting: 'indoor' }, ttl: 6 * HOURS },
+  { key: 'free', re: /\b((no|not much|short on|tight on|low on) (money|cash|budget)|broke|can'?t afford|no budget)\b/i, note: 'Short on money', say: 'you’re keeping it free', set: { budget: 'free' }, ttl: 72 * HOURS },
+  { key: 'energy', re: /\b(too tired|no energy|exhausted|drained|worn out|so tired)\b/i, note: 'Low on energy', say: 'you’re low on energy', set: { energy: 1 }, ttl: 6 * HOURS },
+  { key: 'quiet', re: /\b((can'?t|cannot) (make noise|be loud)|(everyone|people|family|baby) (is |are )?(asleep|sleeping)|late at night)\b/i, note: 'Needs something quiet', say: 'it needs to be quiet', set: { energy: 1 }, ttl: 6 * HOURS },
+  { key: 'time', re: /\b(?:only|just) (?:have |got )?(\d{1,3}) ?(?:min|mins|minutes)\b/i, note: m => `Only has ${m[1]} minutes`, say: m => `you only have ${m[1]} minutes`, set: m => ({ time: Math.max(5, +m[1]) }), ttl: 3 * HOURS },
+  { key: m => 'like:' + m[2].toLowerCase(), re: /\bi (love|like|enjoy|am into|'m into) ([a-z][a-z ]{2,30}?)(?:[.,!?]|$| and | but )/i, note: m => `Enjoys ${m[2].trim()}`, say: m => `you enjoy ${m[2].trim()}`, ttl: 0 },
+  { key: m => 'dislike:' + m[2].toLowerCase(), re: /\bi (hate|don'?t like|do not like|dislike|can'?t stand) ([a-z][a-z ]{2,30}?)(?:[.,!?]|$| and | but )/i, note: m => `Doesn’t like ${m[2].trim()}`, say: m => `you don’t like ${m[2].trim()}`, ttl: 0 }
+];
+// Returns new or refreshed notes found in one message: [{ key, text, set, until }]
+function learnFrom(text, now = Date.now()) {
+  const out = [];
+  for (const l of LEARN) {
+    const m = text.match(l.re); if (!m) continue;
+    const call = v => (typeof v === 'function' ? v(m) : v);
+    out.push({ key: call(l.key), text: call(l.note), say: call(l.say), set: call(l.set) || null, until: l.ttl ? now + l.ttl : 0 });
+  }
+  return out;
+}
+// Merge notes into memory (newest wins per key), dropping expired ones; at most 20 kept.
+function remember(notes, fresh, now = Date.now()) {
+  const byKey = new Map(notes.filter(n => !n.until || n.until > now).map(n => [n.key, n]));
+  for (const n of fresh) byKey.set(n.key, n);
+  return [...byKey.values()].slice(-20);
+}
+// Filters implied by what someone has told us (e.g. "can't go out" -> indoor ideas only).
+const memoryFilters = (notes, now = Date.now()) => Object.assign({}, ...notes.filter(n => n.set && (!n.until || n.until > now)).map(n => n.set));
+
 // Companion: warm, honest, never claims to be human.
 // Same tripwire as the API's: runs before anything else, not a clinical risk detector.
 const CRISIS = /\b(kill myself|suicid\w*|end my life|take my own life|want to die|don'?t want to live|do not want to live|better off dead|hurt myself|harm myself|self[- ]?harm|cut myself|plan to (kill|hurt|harm) myself)\b/i;
@@ -171,7 +231,7 @@ const INTENTS = [
   { id: 'low', re: /(sad|down|low|depress|unhappy|cry|empty)/i },
   { id: 'starter', re: /(conversation starter|what (do|should) i say|talk to|reach out|text (him|her|them))/i },
   { id: 'idea', re: /(idea|suggest|what should i do|recommend|activity|something to do)/i },
-  { id: 'thanks', re: /^(thanks|thank you|ty|cheers)/i },
+  { id: 'thanks', re: /^(thanks|thank you|ty|cheers|ok thanks|great,? thanks)/i },
   { id: 'hello', re: /^(hi|hey|hello|yo|good (morning|evening|afternoon))\b/i }
 ];
 
@@ -188,36 +248,69 @@ const STARTERS = [
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+// Turning down the last suggestion ("I can't", "not now", "something else").
+const REJECT = /\b(can'?t|cannot|won'?t|no thanks|nah|not (now|today|really|feeling it|for me)|don'?t (want|feel like)|something else|another one|different idea|not possible|no$)/i;
+const FOLLOW_UP = {
+  scroll: 'What usually happens right before you start scrolling: boredom, avoiding something, or just habit?',
+  lonely: 'Who is someone you would actually like to hear from this week?',
+  anxious: 'What is the one thing on your mind that feels biggest right now?',
+  tired: 'Is it sleepy-tired or drained-tired? They need different kinds of rest.',
+  low: 'Do you want to talk it through, or would something small and kind for yourself help more?',
+  default: 'I am listening. What would make the next hour feel a little better?'
+};
+
+// ctx: { history: earlier messages in this chat, notes: remembered notes, suggest({ mood, filters, avoid }), person(), ideaById(id) }
 function localReply(text, ctx) {
   if (CRISIS.test(text)) {
     return { content: 'I am really glad you told me. I am an AI, so I cannot be there the way a person can — but you deserve support right now. If you might be in danger, please call 112 (India emergency) or your local emergency number. In India you can also call Tele MANAS on 14416, free and 24/7. Is there someone you trust you could message right now?', actions: [{ label: 'Open People', a: 'tab', v: 'life:people' }] };
   }
-  const intent = (INTENTS.find(i => i.re.test(text)) || { id: 'default' }).id;
-  const act = ctx.suggest(intent);
-  const actBtn = act ? [{ label: `Try: ${act.title}`, a: 'activity', v: act.id }] : [];
+  const history = ctx.history || [];
+  const lastIdeaId = [...history].reverse().find(m => m.role === 'assistant')?.actions?.find(a => a.a === 'activity')?.v;
+  const lastIdea = lastIdeaId && ctx.ideaById(lastIdeaId);
+  const shownTitles = history.flatMap(m => (m.actions || []).filter(a => a.a === 'activity').map(a => ctx.ideaById(a.v)?.title)).filter(Boolean);
+  const learned = learnFrom(text);
+  const filters = memoryFilters([...(ctx.notes || []), ...learned]);
+  const ownIntent = INTENTS.find(i => i.re.test(text))?.id;
+  // Without a new topic, keep the thread: the last thing they were talking about.
+  const intent = ownIntent || [...history].reverse().map(m => m.role === 'user' && INTENTS.find(i => i.re.test(m.content))?.id).find(Boolean) || 'default';
+  const moodFor = { scroll: 'restless', lonely: 'lonely', anxious: 'anxious', tired: 'tired', low: 'low' };
+  const suggest = extra => ctx.suggest({ mood: moodFor[intent], filters: { ...filters, ...extra }, avoid: shownTitles });
+  const btn = a => (a ? [{ label: `Try: ${a.title}`, a: 'activity', v: a.id }, { label: 'Something else', a: 'quickSay', v: 'Something else' }] : []);
+  const heard = learned.map(n => n.say).join(' and ');
+
+  if (lastIdea && REJECT.test(text) && !['lonely', 'anxious', 'low'].includes(ownIntent)) {
+    // "can't" about an outdoor idea usually means they can't go out right now.
+    const extra = /can'?t|cannot|not possible/i.test(text) && lastIdea.setting === 'outdoor' && !filters.setting ? { setting: 'indoor' } : {};
+    if (extra.setting) learned.push(learnFrom("can't go out")[0]);
+    const a = suggest(extra);
+    const why = heard ? `Got it: ${heard}. ` : extra.setting ? 'Fair enough, let us keep it indoors. ' : 'No problem. ';
+    return { content: a ? `${why}How about “${a.title}” instead? ${a.dur} minutes. ${a.why}` : `${why}What would feel doable right now?`, actions: btn(a), learned };
+  }
+  const a = ['scroll', 'tired', 'idea', 'default'].includes(intent) || learned.length ? suggest() : null;
+  const note = heard ? `I will keep in mind: ${heard}. ` : '';
   const person = ctx.person();
-  switch (intent) {
+  switch (ownIntent || (learned.length ? 'idea' : intent === 'default' ? 'default' : 'followup')) {
     case 'scroll':
-      return { content: `That pull to keep scrolling is real — apps are built for it, so it is not a willpower failure. Want to swap the next ${act ? act.dur : 15} minutes for something you will actually remember? ${act ? `“${act.title}” could fit: ${act.why.toLowerCase()}` : ''}`, actions: [...actBtn, { label: '40-second pause', a: 'pause' }] };
+      return { content: `${note}That pull to keep scrolling is real — apps are built for it, so it is not a willpower failure. Want to swap the next ${a ? a.dur : 15} minutes for something you will actually remember? ${a ? `“${a.title}” could fit: ${a.why.toLowerCase()}` : ''}`, actions: [...btn(a).slice(0, 1), { label: '40-second pause', a: 'pause' }], learned };
     case 'lonely':
-      return { content: `Feeling lonely is hard, and it is more common than it looks from the outside. One small step: reach out to one person, even briefly.${person ? ` You noted ${person.name} as someone to reconnect with — maybe today?` : ''} You could open with: ${pick(STARTERS)}`, actions: [{ label: 'People to reconnect', a: 'tab', v: 'life:people' }, ...actBtn] };
+      return { content: `Feeling lonely is hard, and it is more common than it looks from the outside. One small step: reach out to one person, even briefly.${person ? ` You noted ${person.name} as someone to reconnect with — maybe today?` : ''} You could open with: ${pick(STARTERS)}`, actions: [{ label: 'People to reconnect', a: 'tab', v: 'life:people' }], learned };
     case 'anxious':
-      return { content: 'That sounds like a lot to carry. Let us slow things down for a second: name 5 things you can see, 4 you can hear, 3 you can touch. Then, what is the one thing actually in your control in the next hour?', actions: [{ label: 'Breathe with me', a: 'pause' }, { label: 'Write it out', a: 'journal' }] };
+      return { content: 'That sounds like a lot to carry. Let us slow things down for a second: name 5 things you can see, 4 you can hear, 3 you can touch. Then, what is the one thing actually in your control in the next hour?', actions: [{ label: 'Breathe with me', a: 'pause' }, { label: 'Write it out', a: 'journal' }], learned };
     case 'tired':
-      return { content: `Rest is not something you have to earn. If you want something gentle that is not a screen${act ? `, “${act.title}” takes ${act.dur} minutes and asks very little.` : ', try ten minutes of stretching or sitting outside.'}`, actions: actBtn };
+      return { content: `${note}Rest is not something you have to earn. If you want something gentle that is not a screen${a ? `, “${a.title}” takes ${a.dur} minutes and asks very little.` : ', try ten minutes of stretching.'}`, actions: btn(a), learned };
     case 'low':
-      return { content: 'I am sorry you are feeling low. You do not have to fix it right now. Sometimes it helps to say what is going on out loud — your Journal is private, and you can just talk. Want to try, or would you rather tell me more here?', actions: [{ label: 'Record a thought', a: 'record' }] };
+      return { content: 'I am sorry you are feeling low. You do not have to fix it right now. Sometimes it helps to say what is going on out loud — your Journal is private, and you can just talk. Want to try, or would you rather tell me more here?', actions: [{ label: 'Record a thought', a: 'record' }], learned };
     case 'starter':
-      return { content: `Keep it light and specific. A few openers:\n\n${STARTERS.slice(0, 3).join('\n')}\n\nThe goal is not a perfect message — just a door they can walk through.`, actions: [{ label: 'People to reconnect', a: 'tab', v: 'life:people' }] };
+      return { content: `Keep it light and specific. A few openers:\n\n${STARTERS.slice(0, 3).join('\n')}\n\nThe goal is not a perfect message — just a door they can walk through.`, actions: [{ label: 'People to reconnect', a: 'tab', v: 'life:people' }], learned };
     case 'idea':
-      return { content: act ? `Here is one: “${act.title}” — ${act.desc} ${act.why}` : 'Discover has a few ideas picked for your time and energy.', actions: [...actBtn, { label: 'Open Discover', a: 'tab', v: 'discover' }] };
+      return { content: a ? `${note}Here is one: “${a.title}”. ${a.desc} ${a.why}` : 'Discover can find a few ideas for your time and energy.', actions: [...btn(a), { label: 'Open Discover', a: 'tab', v: 'discover' }], learned };
     case 'thanks':
-      return { content: 'Any time. Go enjoy the next bit of your day. 🌿', actions: [] };
+      return { content: 'Any time. Go enjoy the next bit of your day. 🌿', actions: [], learned };
     case 'hello':
-      return { content: 'Hi! What do you need right now — an idea, someone to think out loud with, or a little calm?', actions: [] };
-    default: {
-      const k = keywords(text, 1)[0];
-      return { content: k ? `Tell me more about ${k}. What part of it matters most to you?` : 'I am listening. What would make the next hour feel worthwhile?', actions: [] };
-    }
+      return { content: 'Hi! What do you need right now — an idea, someone to think out loud with, or a little calm?', actions: [], learned };
+    case 'followup':
+      return { content: FOLLOW_UP[intent] || FOLLOW_UP.default, actions: [], learned };
+    default:
+      return { content: a ? `${FOLLOW_UP.default} If it helps, one idea: “${a.title}” (${a.dur} min).` : FOLLOW_UP.default, actions: btn(a), learned };
   }
 }

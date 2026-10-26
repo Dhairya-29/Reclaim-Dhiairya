@@ -1,6 +1,6 @@
 // Offline-first: app files network-first with cache fallback, fonts cache-first.
-const CACHE = 'reclaim-v2';
-const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'data.js', 'activities.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png'];
+const CACHE = 'reclaim-v3';
+const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'data.js', 'ideas.json', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
