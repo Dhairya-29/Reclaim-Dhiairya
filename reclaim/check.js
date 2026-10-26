@@ -33,3 +33,13 @@ assert.ok(cat.activities.length >= 90 && topicIds.size >= 13);
 for (const a of cat.activities) assert.ok(topicIds.has(a.cat) && a.steps.length && a.dur > 0, a.id);
 assert.strictEqual(new Set(cat.activities.map(a => a.id)).size, cat.activities.length);
 console.log('catalogue ok');
+
+// Moods come from the shared catalogue and drive detection (same keywords the API uses).
+vm.runInContext('MOODS = ' + JSON.stringify(cat.moods) + ';this.detectMood = detectMood; this.CRISIS = CRISIS', ctx);
+assert.strictEqual(ctx.detectMood('so drained, no energy'), 'tired');
+assert.strictEqual(ctx.detectMood('feeling lonely and stressed'), 'lonely'); // priority: lonely beats anxious
+assert.strictEqual(ctx.detectMood('bored, just scrolling reels'), 'restless');
+assert.strictEqual(ctx.detectMood('mmm'), undefined);
+for (const m of cat.moods) assert.ok(m.label && m.msg && m.cats && m.energy && new RegExp(m.words, 'i'), m.id);
+assert.ok(ctx.CRISIS.test("I don't want to live") && !ctx.CRISIS.test('I want to live fully'));
+console.log('moods ok');

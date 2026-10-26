@@ -1,179 +1,68 @@
-"""Reclaim API: the companion, draft and recommendation backend for the Reclaim app.
+"""Reclaim API: companion chat, journal drafts and mood check-ins for the Reclaim app.
 
 Run:  uvicorn main:app --reload --port 8000
-Env:  ANTHROPIC_API_KEY   use Claude (checked first)
-      GROQ_API_KEY        use Groq (free tier) when no Anthropic key is set
-                          with neither key: safe rule-based replies
-      RECLAIM_PROVIDER    force claude | groq | rules
-      RECLAIM_MODEL       Claude model, default claude-opus-5-5
-      GROQ_MODEL          Groq model, default openai/gpt-oss-120b
-      ALLOWED_ORIGINS     comma-separated CORS origins, default *
-      ACTIVITIES_PATH     shared catalogue, default ../reclaim/activities.json
-      RECLAIM_DB          SQLite file for feedback, default ./reclaim.db
+Env:  model choice       see providers.py (ANTHROPIC_API_KEY / GROQ_API_KEY / OLLAMA_BASE_URL)
+      emotion model      see mood.py (optional)
+      ALLOWED_ORIGINS    comma-separated CORS origins, default *
+      CRISIS_COUNTRY     crisis resources to show, default India
+      RECLAIM_DB         SQLite file for feedback, default ./reclaim.db
+      LOG_LEVEL          default INFO
 """
 from __future__ import annotations
 
-import json
+import logging
 import os
 import re
 import sqlite3
 import time
 from collections import defaultdict, deque
 from pathlib import Path
-from typing import Literal, Optional, Protocol
+from typing import Literal, Optional
 
-import anthropic
-import groq
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-HERE = Path(__file__).parent
-MODEL = os.getenv('RECLAIM_MODEL', 'claude-opus-5-5')
-GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-120b')
-CATALOG = json.loads(Path(os.getenv('ACTIVITIES_PATH', HERE.parent / 'reclaim' / 'activities.json')).read_text(encoding='utf8'))
-ACTIVITIES = CATALOG['activities']
-BY_ID = {a['id']: a for a in ACTIVITIES}
-TOPICS = dict(CATALOG['topics'])
-DB_PATH = os.getenv('RECLAIM_DB', str(HERE / 'reclaim.db'))
+from mood import ACTIVITIES, MOODS, TOPICS, detect_mood, recommend
+from providers import NoModel, Provider, ProviderError, Refused, make_provider
 
-CRISIS = re.compile(r"suicid|kill myself|end my life|self[- ]?harm|hurt myself|don'?t want to (live|be alive)", re.I)
-CRISIS_REPLY = (
-    "I am really glad you told me. I am an AI, so I cannot be there the way a person can, but you deserve support "
-    "right now. If you might be in danger, please call 112 (India emergency) or your local emergency number. In India "
-    "you can also call Tele MANAS on 14416, free and 24/7. Is there someone you trust you could message right now?"
-)
+logging.basicConfig(level=os.getenv('LOG_LEVEL', 'INFO'))
+DB_PATH = os.getenv('RECLAIM_DB', str(Path(__file__).parent / 'reclaim.db'))
+
+# ---------------------------------------------------------------- safety
+# A conservative phrase tripwire that runs before any model, not a clinical risk detector.
+CRISIS = re.compile(r"\b(kill myself|suicid\w*|end my life|take my own life|want to die|don'?t want to live|do not want to live"
+                    r"|better off dead|hurt myself|harm myself|self[- ]?harm|cut myself|plan to (kill|hurt|harm) myself)\b", re.I)
+UNSAFE_REPLY = re.compile(r'\b(you should kill yourself|go kill yourself|stop taking your medication|ignore your doctor)\b', re.I)
+SAFE_FALLBACK = "I'm here with you. Could you tell me a bit more about how you're feeling right now?"
 
 
-# ---------------------------------------------------------------- recommendations
-def recommend(interests: list[str], mood: Optional[str] = None, time_min: int = 0, energy: int = 0,
-              budget: str = 'any', setting: str = 'any', exclude: set[str] = frozenset(), limit: int = 3) -> list[dict]:
-    """Same rules as the app's Discover tab: hard filters, then score by interests and mood."""
-    def fits(a):
-        return ((not time_min or a['dur'] <= time_min) and (not energy or a['energy'] <= energy)
-                and (budget == 'any' or a['cost'] <= (0 if budget == 'free' else 1))
-                and (setting == 'any' or a['setting'] in (setting, 'either')) and a['id'] not in exclude)
-
-    def score(a):
-        s = 2 if a['cat'] in interests else 0
-        if mood in ('tired', 'low'):
-            s += 2 if a['energy'] == 1 else -1
-        if mood == 'restless':
-            s += {3: 3, 2: 1}.get(a['energy'], 0)
-        if mood == 'lonely' and a['cat'] in ('social', 'community'):
-            s += 3
-        if mood in ('calm', 'good') and a['cat'] in ('outdoors', 'creative', 'social', 'explore'):
-            s += 1
-        return s
-
-    return sorted(filter(fits, ACTIVITIES), key=score, reverse=True)[:limit]
+def safety_reply() -> str:
+    if os.getenv('CRISIS_COUNTRY', 'India').strip().lower() == 'india':
+        where = ('If you might act on these thoughts, please call 112 now. You can also call Tele MANAS on 14416, '
+                 'free and 24/7.')
+    else:
+        where = 'If you might act on these thoughts, please call your local emergency number or a crisis line now.'
+    return (f"I'm really sorry you're going through this, and I'm glad you told me. I'm an AI, so I can't be there the way "
+            f"a person can, but your safety matters. {where} If you can, be near someone you trust and tell them you're not okay.")
 
 
-# ---------------------------------------------------------------- providers
-class Refused(Exception):
-    """The model declined the request."""
-
-
-class ProviderError(Exception):
-    """The model service failed; `busy` means rate-limited (worth retrying soon)."""
-
-    def __init__(self, kind: str, busy: bool = False):
-        super().__init__(kind)
-        self.busy = busy
-
-
-class Provider(Protocol):
-    name: str
-    model: Optional[str]
-
-    async def complete(self, system: str, messages: list[dict], max_tokens: int, effort: str) -> str: ...
-
-
-class ClaudeProvider:
-    name = 'claude'
-    model = MODEL
-
-    def __init__(self):
-        self.client = anthropic.AsyncAnthropic(timeout=40.0, max_retries=2)
-
-    async def complete(self, system, messages, max_tokens=2048, effort='low'):
-        try:
-            r = await self.client.beta.messages.create(
-                model=MODEL,
-                max_tokens=max_tokens,
-                system=system,
-                messages=messages,
-                output_config={'effort': effort},
-                # If a safety classifier declines, the API retries on Anthropic's recommended fallback model.
-                betas=['server-side-fallback-2026-07-01'],
-                fallbacks='default',
-            )
-        except anthropic.RateLimitError as e:
-            raise ProviderError('RateLimitError', busy=True) from e
-        except anthropic.APIError as e:
-            raise ProviderError(type(e).__name__) from e
-        if r.stop_reason == 'refusal':
-            raise Refused()
-        return ''.join(b.text for b in r.content if b.type == 'text').strip()
-
-
-class GroqProvider:
-    """Groq's free tier, running an open model. Same prompts as Claude."""
-    name = 'groq'
-    model = GROQ_MODEL
-
-    def __init__(self):
-        self.client = groq.AsyncGroq(timeout=40.0, max_retries=2)
-
-    async def complete(self, system, messages, max_tokens=2048, effort='low'):
-        kwargs = {'reasoning_effort': effort, 'reasoning_format': 'hidden'} if GROQ_MODEL.startswith('openai/gpt-oss') else {}
-        try:
-            r = await self.client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[{'role': 'system', 'content': system}, *messages],
-                max_completion_tokens=max_tokens,
-                **kwargs,
-            )
-        except groq.RateLimitError as e:
-            raise ProviderError('RateLimitError', busy=True) from e
-        except groq.APIError as e:
-            raise ProviderError(type(e).__name__) from e
-        text = (r.choices[0].message.content or '').strip()
-        if not text:
-            raise ProviderError('EmptyReply')
-        return text
-
-
-class RuleProvider:
-    """No model configured: short, safe, honest replies so the app stays useful."""
-    name = 'rules'
-    model = None
-
-    async def complete(self, system, messages, max_tokens=0, effort=''):
-        raise LookupError('no model configured')
-
-
-def make_provider() -> Provider:
-    forced = os.getenv('RECLAIM_PROVIDER')
-    if forced:
-        return {'claude': ClaudeProvider, 'groq': GroqProvider, 'rules': RuleProvider}[forced]()
-    if os.getenv('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_AUTH_TOKEN'):
-        return ClaudeProvider()
-    if os.getenv('GROQ_API_KEY'):
-        return GroqProvider()
-    return RuleProvider()
+def safe(text: str) -> str:
+    return SAFE_FALLBACK if UNSAFE_REPLY.search(text) else text
 
 
 # ---------------------------------------------------------------- prompts
 COMPANION_SYSTEM = """You are the companion inside Reclaim, an app that helps people swap empty scrolling for real life: activities, people, memories and growth.
 
 How you talk:
-- Warm, honest and brief: two to four short sentences, plain text, no markdown headings or lists unless asked.
+- Warm, respectful, non-judgmental and brief: two to four short sentences, plain text, no headings or lists unless asked.
 - You are an AI and never pretend to be human. If asked, say so plainly.
-- Help the person name what they actually need (rest, company, calm, novelty, movement, meaning) and offer one small, concrete next step in the real world.
+- Reflect what they seem to feel without claiming certainty about it. Sometimes listening and one gentle question beats advice.
+- When it fits, offer one small, optional, concrete next step in the real world. Never promise it will work.
 - Encourage human connection where it fits: reaching out to someone, a conversation starter, an invitation.
-- Never guilt-trip, never mention streaks or productivity scores, never create urgency. It is fine for them to close the app.
-- You are not a therapist. For anything medical or serious, gently suggest a professional. If they mention self-harm or being in danger, give the crisis line (India: 112, Tele MANAS 14416) and encourage contacting someone they trust.
+- Never guilt-trip, create urgency, or encourage depending on you. It is fine for them to close the app.
+- Do not diagnose, prescribe or act as a therapist; for anything medical or serious, gently suggest a professional. Never describe ways to self-harm. If they may be in danger, urge them to contact emergency services (India: 112, Tele MANAS 14416) and someone they trust.
+- Do not invent facts about them.
 
 Suggesting activities:
 - When an activity would genuinely help, you may suggest ONE from the candidates below, in your own words.
@@ -189,6 +78,8 @@ DRAFT_SYSTEM = """You turn someone's journal thoughts (spoken or typed, sometime
 - In the body use plain paragraphs; use "## " headings and "- " bullets only when they help.
 - No preamble or closing remarks; output only the draft."""
 
+CHECKIN_SYSTEM = """Someone just opened Reclaim and told you how they feel. Write one or two short, warm sentences: gently reflect the feeling (without claiming certainty or diagnosing) and say the ideas below might fit. Do not list or name the ideas, do not give advice beyond that, plain text only."""
+
 TAG = re.compile(r'\s*\[\[activity:([a-z0-9]+)\]\]\s*$', re.I)
 
 
@@ -202,21 +93,6 @@ def companion_context(ctx: 'ChatContext', candidates: list[dict]) -> str:
     if ctx.mood:
         about.append(f'Today they said they feel {ctx.mood}.')
     return '\n\n'.join(filter(None, [' '.join(about), 'Candidate activities:\n' + '\n'.join(lines)]))
-
-
-def rule_reply(text: str, candidates: list[dict]) -> tuple[str, Optional[str]]:
-    a = candidates[0] if candidates else None
-    t = text.lower()
-    if re.search(r'scroll|reels|phone|bored|doom', t) and a:
-        return (f"That pull to keep scrolling is real, and it is not a willpower failure. Want to swap the next "
-                f"{a['dur']} minutes for \"{a['title']}\"? {a['why']}", a['id'])
-    if re.search(r'lonely|alone|miss', t):
-        return ("Feeling lonely is hard, and more common than it looks. One small step: send a short message to "
-                "someone you miss, something like \"I was just thinking about you, how have you been?\"", None)
-    if re.search(r'stress|anxious|overwhelm|panic', t):
-        return ("That sounds like a lot. Try naming 5 things you can see, 4 you can hear and 3 you can touch. "
-                "Then, what is one thing in your control in the next hour?", None)
-    return ("I am listening. What would make the next hour feel worthwhile for you?", None)
 
 
 # ---------------------------------------------------------------- storage (feedback only; chats are not retained)
@@ -270,15 +146,11 @@ class ChatOut(BaseModel):
     provider: str
 
 
-class RecommendIn(BaseModel):
+class CheckInIn(BaseModel):
+    text: str = Field('', max_length=2000)
+    mood: Optional[str] = Field(None, max_length=20)
     interests: list[str] = Field(default_factory=list, max_length=20)
-    mood: Optional[str] = None
-    time: int = Field(0, ge=0, le=600)
-    energy: int = Field(0, ge=0, le=3)
-    budget: Literal['any', 'free', 'low'] = 'any'
-    setting: Literal['any', 'indoor', 'outdoor'] = 'any'
     exclude_ids: list[str] = Field(default_factory=list, max_length=200)
-    limit: int = Field(3, ge=1, le=10)
 
 
 class FeedbackIn(BaseModel):
@@ -289,7 +161,7 @@ class FeedbackIn(BaseModel):
 
 
 # ---------------------------------------------------------------- app
-app = FastAPI(title='Reclaim API', version='1.0.0')
+app = FastAPI(title='Reclaim API', version='1.1.0')
 app.state.provider = make_provider()
 app.add_middleware(
     CORSMiddleware,
@@ -301,8 +173,8 @@ app.add_middleware(
 
 @app.get('/v1/health')
 def health():
-    return {'status': 'ok', 'provider': app.state.provider.name, 'model': app.state.provider.model,
-            'activities': len(ACTIVITIES), 'topics': len(TOPICS)}
+    p = app.state.provider
+    return {'status': 'ok', 'provider': p.name, 'model': p.model, 'activities': len(ACTIVITIES), 'topics': len(TOPICS), 'moods': len(MOODS)}
 
 
 @app.post('/v1/chat', response_model=ChatOut, dependencies=[Depends(rate_limit)])
@@ -312,26 +184,27 @@ async def chat(body: ChatIn):
     if body.mode == 'draft':
         try:
             text = await provider.complete(DRAFT_SYSTEM, [{'role': 'user', 'content': body.message}], max_tokens=4000, effort='medium')
-        except LookupError:
+        except NoModel:
             raise HTTPException(503, 'No model configured; the app drafts on-device instead.')
         except Refused:
             raise HTTPException(422, 'The model declined to draft this.')
         except ProviderError as e:
             raise HTTPException(503 if e.busy else 502, f'Model unavailable: {e}')
-        return ChatOut(reply=text, provider=provider.name)
+        return ChatOut(reply=safe(text), provider=provider.name)
 
     if CRISIS.search(body.message):  # deterministic, never left to the model
-        return ChatOut(reply=CRISIS_REPLY, provider='safety')
+        return ChatOut(reply=safety_reply(), provider='safety')
 
     candidates = recommend(body.context.interests, body.context.mood, limit=5)
     messages = [t.model_dump() for t in body.history] + [{'role': 'user', 'content': body.message}]
-    while messages and messages[0]['role'] != 'user':  # the API needs a user turn first
+    while messages and messages[0]['role'] != 'user':  # the APIs need a user turn first
         messages.pop(0)
     try:
         text = await provider.complete(COMPANION_SYSTEM + '\n\n' + companion_context(body.context, candidates), messages, max_tokens=1024, effort='low')
-    except LookupError:
-        reply, aid = rule_reply(body.message, candidates)
-        return ChatOut(reply=reply, activity_id=aid, provider=provider.name)
+    except NoModel:
+        mood = (await detect_mood(body.message))['mood']
+        pick = recommend(body.context.interests, mood, limit=1)[0]
+        return ChatOut(reply=f"{MOODS[mood]['msg'].rstrip(':')}. Maybe: {pick['title']}. {pick['why']}", activity_id=pick['id'], provider=provider.name)
     except Refused:
         return ChatOut(reply="I can't help with that one, but I'm happy to talk about how you're doing or find something good to do.", provider=provider.name)
     except ProviderError as e:
@@ -344,7 +217,24 @@ async def chat(body: ChatIn):
     if m:
         text = text[:m.start()].rstrip()
         aid = m.group(1) if m.group(1) in {a['id'] for a in candidates} else None
-    return ChatOut(reply=text, activity_id=aid, provider=provider.name)
+    return ChatOut(reply=safe(text), activity_id=aid, provider=provider.name)
+
+
+@app.post('/v1/activities/recommend', dependencies=[Depends(rate_limit)])
+async def check_in(body: CheckInIn):
+    """Mood check-in: how they feel (tapped and/or in their words) -> detected mood, a short note, three ideas."""
+    if CRISIS.search(body.text):
+        return {'mood': 'low', 'emotions': [], 'uncertain': True, 'source': 'safety', 'message': safety_reply(), 'activities': [], 'safety_triggered': True}
+    found = await detect_mood(body.text, body.mood)
+    picks = recommend(body.interests, found['mood'], set(body.exclude_ids))
+    message = MOODS[found['mood']]['msg']
+    if body.text:
+        try:
+            said = f"They said: {body.text}\nBest guess at their mood: {found['mood']}{' (uncertain)' if found['uncertain'] else ''}"
+            message = safe(await app.state.provider.complete(CHECKIN_SYSTEM, [{'role': 'user', 'content': said}], max_tokens=300, effort='low'))
+        except (NoModel, Refused, ProviderError):
+            pass  # the mood's own message is fine
+    return {**found, 'message': message, 'activities': picks, 'safety_triggered': False}
 
 
 @app.post('/v1/chat/feedback', dependencies=[Depends(rate_limit)])
@@ -352,12 +242,6 @@ def feedback(body: FeedbackIn):
     with db() as con:
         con.execute('INSERT INTO feedback VALUES (?, ?, ?, ?, ?)', (body.conversation_id, body.message_id, body.rating, body.comment, time.time()))
     return {'ok': True}
-
-
-@app.post('/v1/activities/recommend')
-def recommend_activities(body: RecommendIn):
-    picks = recommend(body.interests, body.mood, body.time, body.energy, body.budget, body.setting, set(body.exclude_ids), body.limit)
-    return {'activities': picks}
 
 
 @app.delete('/v1/conversations/{conversation_id}')

@@ -1,13 +1,15 @@
 // Curated catalogue + on-device (rule-based) companion, questions and drafts.
 // Works offline; a server URL in Settings upgrades replies to a real model.
 
-// Activities and topics live in activities.json (shared with the backend) and load at boot.
+// Activities, topics and moods live in activities.json (shared with the backend) and load at boot.
 let ACTIVITIES = [];
 let INTERESTS = [];
+let MOODS = [];
 
-const MOODS = [
-  ['calm', 'Calm'], ['good', 'Good'], ['tired', 'Tired'], ['restless', 'Restless'], ['low', 'Low'], ['lonely', 'Lonely']
-];
+// Best guess at a mood from someone's own words, using each mood's keywords (same rules as the API).
+function detectMood(text) {
+  return [...MOODS].sort((a, b) => a.priority - b.priority).find(m => new RegExp(m.words, 'i').test(text))?.id;
+}
 
 // Voicepal-style draft presets, retuned for a life journal.
 const DEFAULT_PRESETS = [
@@ -159,7 +161,8 @@ function localDraft(stream, preset, custom) {
 }
 
 // Companion: warm, honest, never claims to be human.
-const CRISIS = /(suicid|kill myself|end my life|self[- ]?harm|hurt myself|don'?t want to (live|be alive))/i;
+// Same tripwire as the API's: runs before anything else, not a clinical risk detector.
+const CRISIS = /\b(kill myself|suicid\w*|end my life|take my own life|want to die|don'?t want to live|do not want to live|better off dead|hurt myself|harm myself|self[- ]?harm|cut myself|plan to (kill|hurt|harm) myself)\b/i;
 const INTENTS = [
   { id: 'scroll', re: /(scroll|doom|phone|instagram|reels|tiktok|youtube|shorts|feed|bored|nothing to do|wasting time)/i },
   { id: 'lonely', re: /(lonely|alone|isolated|no friends|miss (him|her|them|people)|nobody)/i },

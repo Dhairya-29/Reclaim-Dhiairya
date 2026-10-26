@@ -45,7 +45,7 @@ const fresh = () => ({
   onboarded: false,
   prefs: { name: '', interests: [], theme: 'system', apiUrl: '', presets: DEFAULT_PRESETS.map(p => ({ ...p })) },
   ui: { tab: 'today', lifeSeg: 'journal', filters: { time: 0, energy: 0, budget: 'any', setting: 'any', interest: 'any' }, page: 0, convoId: null, q: '' },
-  moods: {}, today: { date: '', i: 0 },
+  moods: {}, today: { date: '', i: 0 }, checkin: null,
   history: [], streams: [], memories: [], people: [], projects: [], convos: []
 });
 let S;
@@ -181,13 +181,17 @@ const hash = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
 function score(a, mood) {
   let s = S.prefs.interests.includes(a.cat) ? 2 : 0;
   s -= S.history.filter(h => h.activityId === a.id && Date.now() - h.ts < 3 * 864e5).length * 3;
-  if (mood === 'tired' || mood === 'low') s += a.energy === 1 ? 2 : -1;
-  if (mood === 'restless') s += a.energy === 3 ? 3 : a.energy === 2 ? 1 : 0;
-  if (mood === 'lonely') s += a.cat === 'social' ? 3 : 0;
-  if (mood === 'calm' || mood === 'good') s += ['outdoors', 'creative', 'social'].includes(a.cat) ? 1 : 0;
+  const m = MOODS.find(x => x.id === mood);
+  if (m) s += (m.cats[a.cat] || 0) + (m.energy[a.energy] || 0);
   return s + (Math.abs(hash(a.id + dayKey())) % 100) / 100;
 }
 const ranked = (list, mood) => [...list].sort((a, b) => score(b, mood) - score(a, mood));
+// Best n, but one per topic first so the picks feel different from each other (same rule as the API).
+function varied(list, n = 3) {
+  const picks = [], seen = new Set();
+  for (const a of list) if (picks.length < n && !seen.has(a.cat)) { picks.push(a); seen.add(a.cat); }
+  return [...picks, ...list.filter(a => !picks.includes(a))].slice(0, n);
+}
 const actById = id => ACTIVITIES.find(a => a.id === id);
 const activeRun = () => S.history.find(h => h.state === 'started');
 function matches(a, f) {
@@ -204,10 +208,15 @@ function whyFits(a) {
   return (S.prefs.interests.includes(a.cat) ? `You said you enjoy ${it[1].toLowerCase()}. ` : '') + a.why;
 }
 const todayMood = () => S.moods[dayKey()];
+const moodLabel = id => MOODS.find(m => m.id === id)?.label.toLowerCase() || id;
 function todayPicks() {
   if (S.today.date !== dayKey()) { S.today = { date: dayKey(), i: 0 }; save(); }
-  return ranked(ACTIVITIES, todayMood()).slice(0, 3);
+  const c = S.checkin;
+  const fromCheckin = c?.date === dayKey() ? c.ids.map(actById).filter(Boolean) : [];
+  return fromCheckin.length ? fromCheckin : varied(ranked(ACTIVITIES, todayMood()));
 }
+// Activities done or skipped in the last 3 days, so check-ins suggest something new.
+const recentIds = () => S.history.filter(h => Date.now() - h.ts < 3 * 864e5).map(h => h.activityId);
 
 /* ---------------- Views ---------------- */
 const V = {};
@@ -239,11 +248,11 @@ V.today = () => {
     <h1 class="greet serif">${greet}${S.prefs.name ? `, ${esc(S.prefs.name)}` : ''}.</h1>
     <div style="margin:18px 0 22px">
       <div class="label" style="margin-top:0">How are you arriving? <span class="small">(optional)</span></div>
-      <div class="chips scroll" data-keep="mood">${MOODS.map(([k, l]) => `<button class="chip" data-a="mood" data-v="${k}" aria-pressed="${mood === k}">${l}</button>`).join('')}</div>
+      <div class="chips scroll" data-keep="mood">${MOODS.map(m => `<button class="chip" data-a="mood" data-v="${m.id}" aria-pressed="${mood === m.id}">${m.label}</button>`).join('')}</div>
     </div>
     ${runAct ? `<div class="card sage tap" data-a="activity" data-v="${runAct.id}"><div class="eyebrow">In progress</div><h3 class="serif" style="font-size:20px">${esc(runAct.title)}</h3><p class="muted small" style="margin:4px 0 0">Tap when you are done — or skip, no pressure.</p></div>` : ''}
     <div class="card hero">
-      <div class="eyebrow">One idea for today${mood ? ' · for feeling ' + mood : ''}</div>
+      <div class="eyebrow">${mood ? `Picked for feeling ${esc(moodLabel(mood))}` : 'One idea for today'}</div>
       <h2>${esc(a.title)}</h2>
       <p class="muted" style="margin:8px 0 0">${esc(whyFits(a))}</p>
       ${metaPills(a)}
@@ -627,9 +636,8 @@ function currentConvo(create = true) {
 }
 const companionCtx = {
   suggest(intent) {
-    const mood = { scroll: 'restless', lonely: 'lonely', tired: 'tired', low: 'low', anxious: 'calm' }[intent] || todayMood();
-    const pool = intent === 'anxious' ? ACTIVITIES.filter(a => a.cat === 'mindful') : ACTIVITIES;
-    return ranked(pool, mood)[0];
+    const mood = MOODS.some(m => m.id === intent) ? intent : intent === 'scroll' ? 'restless' : todayMood();
+    return ranked(ACTIVITIES, mood)[0];
   },
   person() { return [...S.people].sort((a, b) => (a.last || 0) - (b.last || 0))[0]; }
 };
@@ -730,6 +738,53 @@ function reflect(run, a) {
         save(); await popLayer(); refresh(); haptic(20);
         toast('Saved to My Life. Well done.');
       };
+    }
+  });
+}
+
+/* ---------------- Mood check-in (every time the app opens) ---------------- */
+async function moodSuggestions(mood, text) {
+  if (text && CRISIS.test(text)) return { safety: true, message: localReply(text, companionCtx).content, ids: [] };
+  if (S.prefs.apiUrl && navigator.onLine) {
+    try { // a sleeping free server can take ~50s to wake; don't make anyone wait for it
+      const r = await apiFetch('/v1/activities/recommend', { mood, text, interests: S.prefs.interests, exclude_ids: recentIds() }, AbortSignal.timeout(8000));
+      return { mood: r.mood, message: r.message, ids: r.activities.map(a => a.id), safety: r.safety_triggered };
+    } catch {}
+  }
+  mood = mood || detectMood(text) || 'calm';
+  const recent = new Set(recentIds());
+  return { mood, message: MOODS.find(m => m.id === mood).msg, ids: varied(ranked(ACTIVITIES.filter(a => !recent.has(a.id)), mood)).map(a => a.id) };
+}
+function checkIn() {
+  if (!MOODS.length || $('#sheet-root').children.length) return;
+  sheet(`<div id="ciBody"><h2 class="serif" style="font-weight:500;font-size:24px">How are you feeling${S.prefs.name ? ', ' + esc(S.prefs.name) : ''}?</h2>
+    <p class="muted small">I'll suggest a few things that fit. You can skip this.</p>
+    <div class="chips" style="margin:14px 0">${MOODS.map(m => `<button class="chip" data-mood="${m.id}">${m.label}</button>`).join('')}</div>
+    <div class="or">or in your own words</div>
+    <form id="ciForm"><textarea class="field" id="ciText" placeholder="e.g. Long day, kind of drained" style="min-height:72px" aria-label="How you feel"></textarea>
+    <button class="btn primary block" style="margin-top:10px">Suggest something</button></form>
+    <button class="btn ghost block" data-a="closeSheet" style="margin-top:6px">Skip for now</button></div>`, {
+    onMount: s => {
+      const body = s.querySelector('#ciBody');
+      const run = async (mood, text) => {
+        haptic(10);
+        body.innerHTML = `<div class="generating" style="min-height:200px"><div class="big" aria-hidden="true">🌿</div><p class="muted">Finding things that fit<span class="dots"></span></p></div>`;
+        const r = await moodSuggestions(mood, text);
+        if (!s.isConnected) return; // closed while waiting
+        if (r.safety) {
+          body.innerHTML = `<h2>You matter</h2><p>${esc(r.message)}</p><div class="stack"><a class="btn dark block" href="tel:112">Call 112</a><a class="btn primary block" href="tel:14416">Call Tele MANAS 14416</a><button class="btn soft block" data-a="closeSheet">Close</button></div>`;
+          return;
+        }
+        S.moods[dayKey()] = r.mood; S.checkin = { date: dayKey(), ids: r.ids }; S.today.i = 0; save(); refresh();
+        body.innerHTML = `<div class="eyebrow">Feeling ${esc(moodLabel(r.mood))}</div><p style="margin:0 0 14px">${esc(r.message)}</p>
+          <div class="rise">${r.ids.map(actById).filter(Boolean).map(a => `<button class="option" data-act="${a.id}" style="height:auto;padding:12px 16px;flex-direction:column;align-items:flex-start;gap:2px"><b>${esc(a.title)}</b><span class="muted small" style="font-weight:400">${a.dur} min · ${esc(a.why)}</span></button>`).join('')}</div>
+          <button class="btn soft block" data-a="closeSheet">Maybe later</button>`;
+      };
+      s.addEventListener('click', async e => {
+        const m = e.target.closest('[data-mood]'); if (m) return run(m.dataset.mood, s.querySelector('#ciText')?.value.trim() || '');
+        const act = e.target.closest('[data-act]'); if (act) { await popLayer(); openActivity(act.dataset.act); }
+      });
+      s.querySelector('#ciForm').onsubmit = e => { e.preventDefault(); const t = s.querySelector('#ciText').value.trim(); if (t) run(null, t); else s.querySelector('#ciText').focus(); };
     }
   });
 }
@@ -930,9 +985,9 @@ const A = {
   },
   finishOnboarding() {
     S.prefs.name = $('#obName').value.trim(); S.onboarded = true; save();
-    paint('fade');
+    paint('fade'); setTimeout(checkIn, reduced ? 0 : 500);
   },
-  mood(v) { S.moods[dayKey()] = todayMood() === v ? undefined : v; S.today.i = 0; save(); refresh(); if (todayMood()) toast('Thanks — noted.'); },
+  mood(v) { S.moods[dayKey()] = todayMood() === v ? undefined : v; S.checkin = null; S.today.i = 0; save(); refresh(); if (todayMood()) toast('Thanks — noted.'); },
   anotherIdea() { S.today.i = (S.today.i + 1) % 3; save(); refresh(); },
   activity: v => openActivity(v),
   pause: () => mindfulPause(),
@@ -1236,17 +1291,19 @@ document.addEventListener('change', async e => {
 addEventListener('online', () => S.ui.tab === 'companion' && !screens.length && refresh());
 addEventListener('offline', () => S.ui.tab === 'companion' && !screens.length && refresh());
 
-// App open / close transitions.
+// App open / close transitions. Coming back after 30+ minutes counts as opening the app again.
+let hiddenAt = 0;
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { document.body.classList.add('leaving'); stopPlayer(); }
-  else { document.body.classList.remove('leaving'); document.body.classList.remove('opening'); void document.body.offsetWidth; document.body.classList.add('opening'); }
+  if (document.hidden) { hiddenAt = Date.now(); document.body.classList.add('leaving'); stopPlayer(); return; }
+  document.body.classList.remove('leaving'); document.body.classList.remove('opening'); void document.body.offsetWidth; document.body.classList.add('opening');
+  if (S.onboarded && hiddenAt && Date.now() - hiddenAt > 30 * 60e3 && !layers.some(l => !l.tab)) checkIn();
 });
 
 /* ---------------- Boot ---------------- */
 applyTheme();
 S.ui.tab = 'today'; // every launch starts calm, on Today
 history.replaceState({ n: 0 }, '');
-fetch('activities.json').then(r => r.json()).then(d => { INTERESTS = d.topics; ACTIVITIES = d.activities; }).catch(() => {
+fetch('activities.json').then(r => r.json()).then(d => { INTERESTS = d.topics; ACTIVITIES = d.activities; MOODS = d.moods; }).catch(() => {
   document.body.insertAdjacentHTML('beforeend', '<p class="empty">Could not load activities. Check your connection and reopen Reclaim.</p>');
 }).finally(boot);
 function boot() {
@@ -1256,6 +1313,7 @@ setTimeout(() => {
   $('#splash').classList.add('gone');
   const goTo = new URLSearchParams(location.search).get('go');
   if (goTo && S.onboarded) { history.replaceState({ n: 0 }, '', location.pathname); goTo === 'pause' ? mindfulPause() : goTo === 'record' && A.quickRecord(); }
+  else if (S.onboarded) checkIn();
 }, reduced ? 0 : 750);
 }
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});

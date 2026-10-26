@@ -1,0 +1,4 @@
+# Optional: on-server emotion classifier (GoEmotions). Needs ~1.5 GB RAM; not for Render's free plan.
+-r requirements.txt
+transformers>=4.44
+torch>=2.3

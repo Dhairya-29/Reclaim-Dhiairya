@@ -1542,5 +1542,112 @@
     "Sit there quietly for ten minutes"
    ]
   }
+ ],
+ "moods": [
+  {
+   "id": "calm",
+   "label": "Calm",
+   "priority": 7,
+   "words": "\\b(calm|okay|ok|fine|relaxed|peaceful|chill|alright|content)\\b",
+   "cats": {
+    "outdoors": 1,
+    "creative": 1,
+    "social": 1,
+    "explore": 1
+   },
+   "energy": {},
+   "msg": "A calm moment is a good time to do something worth remembering. A few ideas:"
+  },
+  {
+   "id": "good",
+   "label": "Good",
+   "priority": 6,
+   "words": "\\b(good|great|happy|excited|amazing|awesome|grateful|joyful|fantastic|wonderful|energetic)\\b",
+   "cats": {
+    "outdoors": 1,
+    "creative": 1,
+    "social": 1,
+    "explore": 1
+   },
+   "energy": {
+    "2": 1,
+    "3": 1
+   },
+   "msg": "Glad you are feeling good. Here are a few ways to make the most of it:"
+  },
+  {
+   "id": "tired",
+   "label": "Tired",
+   "priority": 2,
+   "words": "\\b(tired|exhausted|drained|sleepy|worn out|burn(ed|t)? out|no energy|fatigued)\\b",
+   "cats": {
+    "selfcare": 2,
+    "mindful": 2
+   },
+   "energy": {
+    "1": 2,
+    "2": -1,
+    "3": -1
+   },
+   "msg": "Being tired is a signal, not a failure. These ask very little of you:"
+  },
+  {
+   "id": "restless",
+   "label": "Restless",
+   "priority": 5,
+   "words": "\\b(restless|bored|boring|antsy|fidgety|angry|annoyed|irritated|frustrated|scrolling|reels|doom)\\b",
+   "cats": {
+    "active": 1,
+    "play": 1
+   },
+   "energy": {
+    "2": 1,
+    "3": 3
+   },
+   "msg": "That restless energy can go somewhere good. Try one of these:"
+  },
+  {
+   "id": "anxious",
+   "label": "Anxious",
+   "priority": 3,
+   "words": "\\b(anxious|anxiety|nervous|worried|worry|stressed|stress|overwhelmed|overwhelming|panic|on edge|scared|afraid)\\b",
+   "cats": {
+    "mindful": 3,
+    "selfcare": 2
+   },
+   "energy": {
+    "1": 1,
+    "3": -1
+   },
+   "msg": "That sounds like a lot to carry. These might help you slow down a little:"
+  },
+  {
+   "id": "low",
+   "label": "Low",
+   "priority": 4,
+   "words": "\\b(sad|down|low|depressed|unhappy|upset|crying|empty|hopeless|heavy)\\b",
+   "cats": {
+    "selfcare": 1,
+    "social": 1
+   },
+   "energy": {
+    "1": 2,
+    "2": -1,
+    "3": -1
+   },
+   "msg": "I am sorry today feels heavy. No pressure, but here are a few small, kind things:"
+  },
+  {
+   "id": "lonely",
+   "label": "Lonely",
+   "priority": 1,
+   "words": "\\b(lonely|alone|isolated|left out|miss (him|her|them|my|people)|no one|nobody)\\b",
+   "cats": {
+    "social": 3,
+    "community": 3
+   },
+   "energy": {},
+   "msg": "Feeling lonely is hard, and more common than it looks. These might help you feel more connected:"
+  }
  ]
 }
