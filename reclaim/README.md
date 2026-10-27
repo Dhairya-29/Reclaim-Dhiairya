@@ -126,9 +126,17 @@ How it behaves:
 cd "C:/Dhairya Personal/App/backend" && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 ```
 
+Settings live in `backend/.env`. `backend/.env.example` lists every option with its default; copy it to `.env` and put your key after `GROQ_API_KEY=`. Git ignores `.env`, so keys never reach GitHub. Render ignores the file too: set the same names in the service's **Environment** tab there.
+
 ```bash
-cd "C:/Dhairya Personal/App/backend" && GROQ_API_KEY=your-key .venv/Scripts/uvicorn main:app --port 8000
+cd "C:/Dhairya Personal/App/backend" && cp .env.example .env
 ```
+
+```bash
+cd "C:/Dhairya Personal/App/backend" && .venv/Scripts/uvicorn main:app --env-file .env --port 8000
+```
+
+The app itself is a static site with no secrets, so it needs no `.env`. Its default server address is `DEFAULT_API` at the top of `reclaim/app.js`.
 
 Then in the app, open **My Life → ⚙ → Companion server**, enter `http://localhost:8000` and tap **Test connection**. Run the tests with `.venv/Scripts/python -m pytest` (no key needed).
 
