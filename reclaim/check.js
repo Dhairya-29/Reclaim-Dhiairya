@@ -87,3 +87,17 @@ assert.strictEqual(detectMood('mmm'), undefined);
 for (const m of cat.moods) assert.ok(m.label && m.msg && m.cats && m.energy && new RegExp(m.words, 'i'), m.id);
 assert.ok(CRISIS.test("I don't want to live") && !CRISIS.test('I want to live fully'));
 console.log('moods ok');
+
+// The exact chat that looped on one question: every reply must differ from the one before, and short replies get real answers.
+{
+  const chat = [];
+  for (const text of ['work is too much lately', "I'm feeling good", 'Yoo', 'No', 'Good', 'Gaming', 'no', 'no']) {
+    const r = localReply(text, companion(chat.slice()));
+    assert.notStrictEqual(r.content, chat.filter(m => m.role === 'assistant').at(-1)?.content, 'repeated itself after: ' + text);
+    chat.push({ role: 'user', content: text }, { role: 'assistant', content: r.content, actions: r.actions });
+  }
+  const reply = text => chat[chat.findIndex(m => m.content === text) + 1].content;
+  assert.ok(/good one/.test(reply("I'm feeling good")) && /hey/i.test(reply('Yoo')) && /gaming/i.test(reply('Gaming')));
+  assert.ok(!chat.some(m => /tell me more about (feeling|right)/i.test(m.content)), 'no keyword echo');
+}
+console.log('no-repeat chat ok');

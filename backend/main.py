@@ -70,7 +70,8 @@ How you talk:
 Suggesting activities:
 - When an activity would genuinely help, you may suggest ONE from the candidates below, in your own words.
 - If you suggest one, end your reply with its tag on its own line, exactly like: [[activity:a12]]
-- Do not tag anything that is not in the candidate list. Most replies need no suggestion."""
+- Do not tag anything that is not in the candidate list. Most replies need no suggestion, and never suggest in two replies in a row.
+- Follow their lead: if they mention something (a game, a person, their day), be curious about that first. Short replies like "no" or "good" deserve a short, natural answer, not a new pitch."""
 
 DRAFT_SYSTEM = """You turn someone's journal thoughts (spoken or typed, sometimes answers to questions) into a first draft of the type they ask for.
 

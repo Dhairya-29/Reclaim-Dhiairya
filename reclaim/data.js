@@ -32,7 +32,8 @@ function fillIdea(t, maxTime) {
   const dur = Math.min(hi, Math.max(t.dur[0], Math.round((t.dur[0] + Math.random() * (hi - t.dur[0])) / 5) * 5));
   const chosen = { min: String(dur) };
   const sub = str => str.replace(/\{(\w+)\}/g, (_, k) => (chosen[k] ??= pick(IDEA_PARTS.pools[k] || [k])));
-  return { title: capital(sub(t.t)), cat: t.cat, dur, cost: t.c, energy: t.e, setting: t.set, desc: sub(t.d), why: sub(t.w), steps: t.s.map(sub) };
+  const sub2 = str => sub(str).replace(/\b([Aa]) (?=[aeiou])/g, '$1n '); // "a indie song" -> "an indie song"
+  return { title: capital(sub2(t.t)), cat: t.cat, dur, cost: t.c, energy: t.e, setting: t.set, desc: sub2(t.d), why: sub2(t.w), steps: t.s.map(sub2) };
 }
 
 // Best guess at a mood from someone's own words, using each mood's keywords (same rules as the API).
@@ -224,16 +225,26 @@ const memoryFilters = (notes, now = Date.now()) => Object.assign({}, ...notes.fi
 // Same tripwire as the API's: runs before anything else, not a clinical risk detector.
 const CRISIS = /\b(kill myself|suicid\w*|end my life|take my own life|want to die|don'?t want to live|do not want to live|better off dead|hurt myself|harm myself|self[- ]?harm|cut myself|plan to (kill|hurt|harm) myself)\b/i;
 const INTENTS = [
-  { id: 'scroll', re: /(scroll|doom|phone|instagram|reels|tiktok|youtube|shorts|feed|bored|nothing to do|wasting time)/i },
-  { id: 'lonely', re: /(lonely|alone|isolated|no friends|miss (him|her|them|people)|nobody)/i },
-  { id: 'anxious', re: /(anxious|anxiety|stress|overwhelm|panic|worried|nervous|too much)/i },
-  { id: 'tired', re: /(tired|exhausted|drained|sleepy|no energy|burn(ed|t)? out)/i },
-  { id: 'low', re: /(sad|down|low|depress|unhappy|cry|empty)/i },
-  { id: 'starter', re: /(conversation starter|what (do|should) i say|talk to|reach out|text (him|her|them))/i },
-  { id: 'idea', re: /(idea|suggest|what should i do|recommend|activity|something to do)/i },
-  { id: 'thanks', re: /^(thanks|thank you|ty|cheers|ok thanks|great,? thanks)/i },
-  { id: 'hello', re: /^(hi|hey|hello|yo|good (morning|evening|afternoon))\b/i }
+  // Short replies first: they answer the last message rather than start a topic.
+  { id: 'no', re: /^\s*(no+|nope|nah|not really|nothing|never mind|nvm)\W*$/i },
+  { id: 'yes', re: /^\s*(yes|yeah|yep|yup|sure|ok(ay)?|go on|alright|why not)\W*$/i },
+  { id: 'good', re: /^\s*(i'?m |i am |i feel |im )?(feeling )?(so |pretty |really )?(good|great|fine|happy|amazing|awesome|not bad|okay|chill|relaxed)\b/i },
+  { id: 'hello', re: /^\s*(hi+|hey+|hello+|yo+|sup|hola|namaste|good (morning|evening|afternoon))\b/i },
+  { id: 'thanks', re: /^\s*(thanks|thank you|ty|cheers|ok thanks|great,? thanks)/i },
+  { id: 'scroll', re: /\b(scroll\w*|doom\w*|instagram|insta|reels|tiktok|youtube|shorts|feed|bored|boring|nothing to do|wasting time|on my phone)\b/i },
+  { id: 'lonely', re: /\b(lonely|alone|isolated|no friends|miss (him|her|them|people|my \w+)|nobody)\b/i },
+  { id: 'anxious', re: /\b(anxious|anxiety|stress\w*|overwhelm\w*|panic\w*|worried|nervous|too much)\b/i },
+  { id: 'tired', re: /\b(tired|exhausted|drained|sleepy|no energy|burn(ed|t)? out)\b/i },
+  { id: 'low', re: /\b(sad|down|low|depress\w*|unhappy|cry\w*|empty|hopeless)\b/i },
+  { id: 'starter', re: /\b(conversation starter|what (do|should) i say|talk to|reach out|text (him|her|them))\b/i },
+  { id: 'idea', re: /\b(idea|suggest\w*|what (should|can) i do|recommend\w*|activity|something to do|give me one)\b/i },
+  { id: 'hobby', re: /\b(gaming|games?|playing|football|cricket|music|guitar|reading|books?|drawing|painting|coding|anime|movies?|gym|dance|dancing|cooking|chess)\b/i }
 ];
+// Hobbies -> the closest idea topic; on-screen ones get an off-screen idea with a similar feel.
+const HOBBY_TOPIC = { gaming: 'play', games: 'play', game: 'play', playing: 'play', chess: 'play', anime: 'creative', movies: 'creative', movie: 'creative', coding: 'learning',
+  football: 'active', cricket: 'active', gym: 'active', dance: 'active', dancing: 'active', music: 'music', guitar: 'music', reading: 'learning', books: 'learning', book: 'learning',
+  drawing: 'creative', painting: 'creative', cooking: 'cooking' };
+const ON_SCREEN = new Set(['gaming', 'games', 'game', 'playing', 'anime', 'movies', 'movie', 'coding']);
 
 const STARTERS = [
   '“I saw something today that reminded me of you — how have you been?”',
@@ -261,24 +272,42 @@ const FOLLOW_UP = {
 
 // ctx: { history: earlier messages in this chat, notes: remembered notes, suggest({ mood, filters, avoid }), person(), ideaById(id) }
 function localReply(text, ctx) {
+  const history = ctx.history || [];
+  const r = composeReply(text, ctx, history);
+  // Never say the exact same thing twice in a row.
+  const prev = [...history].reverse().find(m => m.role === 'assistant')?.content;
+  if (r.content === prev) {
+    const a = ctx.suggest({ filters: memoryFilters(ctx.notes || []) });
+    return { ...r, content: a ? `Let me try something different: how about “${a.title}”? ${a.dur} minutes. ${a.why}` : 'Tell me a little more, and I will try to be more useful.', actions: a ? [{ label: `Try: ${a.title}`, a: 'activity', v: a.id }] : [] };
+  }
+  return r;
+}
+
+function composeReply(text, ctx, history) {
   if (CRISIS.test(text)) {
     return { content: 'I am really glad you told me. I am an AI, so I cannot be there the way a person can — but you deserve support right now. If you might be in danger, please call 112 (India emergency) or your local emergency number. In India you can also call Tele MANAS on 14416, free and 24/7. Is there someone you trust you could message right now?', actions: [{ label: 'Open People', a: 'tab', v: 'life:people' }] };
   }
-  const history = ctx.history || [];
-  const lastIdeaId = [...history].reverse().find(m => m.role === 'assistant')?.actions?.find(a => a.a === 'activity')?.v;
+  const lastAssistant = [...history].reverse().find(m => m.role === 'assistant');
+  const lastIdeaId = lastAssistant?.actions?.find(a => a.a === 'activity')?.v;
   const lastIdea = lastIdeaId && ctx.ideaById(lastIdeaId);
   const shownTitles = history.flatMap(m => (m.actions || []).filter(a => a.a === 'activity').map(a => ctx.ideaById(a.v)?.title)).filter(Boolean);
   const learned = learnFrom(text);
+  const hobby = text.match(INTENTS.find(i => i.id === 'hobby').re)?.[1]?.toLowerCase();
+  if (hobby) learned.push({ key: 'like:' + hobby, text: `Enjoys ${hobby}`, say: `you enjoy ${hobby}`, set: null, until: 0 });
   const filters = memoryFilters([...(ctx.notes || []), ...learned]);
   const ownIntent = INTENTS.find(i => i.re.test(text))?.id;
-  // Without a new topic, keep the thread: the last thing they were talking about.
-  const intent = ownIntent || [...history].reverse().map(m => m.role === 'user' && INTENTS.find(i => i.re.test(m.content))?.id).find(Boolean) || 'default';
-  const moodFor = { scroll: 'restless', lonely: 'lonely', anxious: 'anxious', tired: 'tired', low: 'low' };
+  // A real sentence with no clear topic continues the previous message's topic; short replies never inherit one.
+  const prevUser = [...history].reverse().find(m => m.role === 'user');
+  const carried = !ownIntent && text.trim().split(/\s+/).length >= 4 && prevUser ? INTENTS.find(i => i.re.test(prevUser.content))?.id : undefined;
+  const intent = ownIntent || carried || 'default';
+  const moodFor = { scroll: 'restless', lonely: 'lonely', anxious: 'anxious', tired: 'tired', low: 'low', good: 'good' };
   const suggest = extra => ctx.suggest({ mood: moodFor[intent], filters: { ...filters, ...extra }, avoid: shownTitles });
   const btn = a => (a ? [{ label: `Try: ${a.title}`, a: 'activity', v: a.id }, { label: 'Something else', a: 'quickSay', v: 'Something else' }] : []);
-  const heard = learned.map(n => n.say).join(' and ');
+  const heard = learned.filter(n => !n.key.startsWith('like:' + hobby)).map(n => n.say).join(' and ');
+  const note = heard ? `I will keep in mind: ${heard}. ` : '';
+  const said = new Set(history.filter(m => m.role === 'assistant').map(m => m.content));
 
-  if (lastIdea && REJECT.test(text) && !['lonely', 'anxious', 'low'].includes(ownIntent)) {
+  if (lastIdea && (REJECT.test(text) || ownIntent === 'no') && !['lonely', 'anxious', 'low'].includes(ownIntent)) {
     // "can't" about an outdoor idea usually means they can't go out right now.
     const extra = /can'?t|cannot|not possible/i.test(text) && lastIdea.setting === 'outdoor' && !filters.setting ? { setting: 'indoor' } : {};
     if (extra.setting) learned.push(learnFrom("can't go out")[0]);
@@ -286,31 +315,44 @@ function localReply(text, ctx) {
     const why = heard ? `Got it: ${heard}. ` : extra.setting ? 'Fair enough, let us keep it indoors. ' : 'No problem. ';
     return { content: a ? `${why}How about “${a.title}” instead? ${a.dur} minutes. ${a.why}` : `${why}What would feel doable right now?`, actions: btn(a), learned };
   }
-  const a = ['scroll', 'tired', 'idea', 'default'].includes(intent) || learned.length ? suggest() : null;
-  const note = heard ? `I will keep in mind: ${heard}. ` : '';
+  if (lastIdea && ownIntent === 'yes') {
+    return { content: `Great. Tap “Try” to start “${lastIdea.title}”, and come back and tell me how it went.`, actions: [{ label: `Try: ${lastIdea.title}`, a: 'activity', v: lastIdea.id }], learned };
+  }
   const person = ctx.person();
-  switch (ownIntent || (learned.length ? 'idea' : intent === 'default' ? 'default' : 'followup')) {
+  const a = ['scroll', 'tired', 'idea', 'good', 'yes'].includes(intent) || learned.length ? suggest(hobby && !ownIntent?.match(/scroll|tired|low|lonely|anxious/) ? { interest: HOBBY_TOPIC[hobby] } : {}) : null;
+  switch (intent) {
     case 'scroll':
       return { content: `${note}That pull to keep scrolling is real — apps are built for it, so it is not a willpower failure. Want to swap the next ${a ? a.dur : 15} minutes for something you will actually remember? ${a ? `“${a.title}” could fit: ${a.why.toLowerCase()}` : ''}`, actions: [...btn(a).slice(0, 1), { label: '40-second pause', a: 'pause' }], learned };
     case 'lonely':
       return { content: `Feeling lonely is hard, and it is more common than it looks from the outside. One small step: reach out to one person, even briefly.${person ? ` You noted ${person.name} as someone to reconnect with — maybe today?` : ''} You could open with: ${pick(STARTERS)}`, actions: [{ label: 'People to reconnect', a: 'tab', v: 'life:people' }], learned };
     case 'anxious':
-      return { content: 'That sounds like a lot to carry. Let us slow things down for a second: name 5 things you can see, 4 you can hear, 3 you can touch. Then, what is the one thing actually in your control in the next hour?', actions: [{ label: 'Breathe with me', a: 'pause' }, { label: 'Write it out', a: 'journal' }], learned };
+      return said.has(ANXIOUS_FIRST)
+        ? { content: FOLLOW_UP.anxious, actions: [{ label: 'Breathe with me', a: 'pause' }], learned }
+        : { content: ANXIOUS_FIRST, actions: [{ label: 'Breathe with me', a: 'pause' }, { label: 'Write it out', a: 'journal' }], learned };
     case 'tired':
       return { content: `${note}Rest is not something you have to earn. If you want something gentle that is not a screen${a ? `, “${a.title}” takes ${a.dur} minutes and asks very little.` : ', try ten minutes of stretching.'}`, actions: btn(a), learned };
     case 'low':
       return { content: 'I am sorry you are feeling low. You do not have to fix it right now. Sometimes it helps to say what is going on out loud — your Journal is private, and you can just talk. Want to try, or would you rather tell me more here?', actions: [{ label: 'Record a thought', a: 'record' }], learned };
     case 'starter':
       return { content: `Keep it light and specific. A few openers:\n\n${STARTERS.slice(0, 3).join('\n')}\n\nThe goal is not a perfect message — just a door they can walk through.`, actions: [{ label: 'People to reconnect', a: 'tab', v: 'life:people' }], learned };
+    case 'good':
+      return { content: `Love that. What is making it a good one?${a ? ` If you want to make the most of it: “${a.title}” (${a.dur} min).` : ''}`, actions: btn(a), learned };
+    case 'no':
+      return { content: 'That is okay, no pressure. Would a small idea for the next half hour help, or would you rather just chat?', actions: [{ label: 'Give me an idea', a: 'quickSay', v: 'Give me an idea' }, { label: 'Just chat', a: 'quickSay', v: 'I just want to chat' }], learned };
+    case 'yes':
     case 'idea':
       return { content: a ? `${note}Here is one: “${a.title}”. ${a.desc} ${a.why}` : 'Discover can find a few ideas for your time and energy.', actions: [...btn(a), { label: 'Open Discover', a: 'tab', v: 'discover' }], learned };
+    case 'hobby':
+      return ON_SCREEN.has(hobby)
+        ? { content: `Nice, what kind of ${hobby} are you into? Some of it leaves you feeling good, and some of it is just another feed.${a ? ` If you want something with a similar feel off-screen: “${a.title}” (${a.dur} min).` : ''}`, actions: btn(a), learned }
+        : { content: `Oh nice, tell me more about the ${hobby}.${a ? ` Here is a fresh way into it: “${a.title}” (${a.dur} min). ${a.why}` : ''}`, actions: btn(a), learned };
     case 'thanks':
       return { content: 'Any time. Go enjoy the next bit of your day. 🌿', actions: [], learned };
     case 'hello':
-      return { content: 'Hi! What do you need right now — an idea, someone to think out loud with, or a little calm?', actions: [], learned };
-    case 'followup':
-      return { content: FOLLOW_UP[intent] || FOLLOW_UP.default, actions: [], learned };
+      return { content: said.size ? 'Hey again! What is on your mind?' : 'Hi! What do you need right now: an idea, someone to think out loud with, or a little calm?', actions: [], learned };
     default:
-      return { content: a ? `${FOLLOW_UP.default} If it helps, one idea: “${a.title}” (${a.dur} min).` : FOLLOW_UP.default, actions: btn(a), learned };
+      if (learned.length && a) return { content: `${note}Here is one that fits: “${a.title}” (${a.dur} min). ${a.why}`, actions: btn(a), learned };
+      return { content: said.has(FOLLOW_UP.default) ? 'Tell me a bit more. What has today been like so far?' : FOLLOW_UP.default, actions: [], learned };
   }
 }
+const ANXIOUS_FIRST = 'That sounds like a lot to carry. Let us slow things down for a second: name 5 things you can see, 4 you can hear, 3 you can touch. Then, what is the one thing actually in your control in the next hour?';

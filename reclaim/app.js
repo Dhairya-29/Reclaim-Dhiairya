@@ -41,9 +41,10 @@ const I = {
 
 /* ---------------- State ---------------- */
 const KEY = 'reclaim.v1';
+const DEFAULT_API = 'https://reclaim-o1pf.onrender.com'; // your Reclaim API on Render; no secrets live in the app
 const fresh = () => ({
   onboarded: false,
-  prefs: { name: '', interests: [], theme: 'system', apiUrl: '', presets: DEFAULT_PRESETS.map(p => ({ ...p })) },
+  prefs: { name: '', interests: [], theme: 'system', apiUrl: DEFAULT_API, apiV: 1, presets: DEFAULT_PRESETS.map(p => ({ ...p })) },
   ui: { tab: 'today', lifeSeg: 'journal', filters: { time: 0, energy: 0, budget: 'any', setting: 'any', interest: 'any' }, disc: null, convoId: null, q: '' },
   moods: {}, today: { date: '', i: 0, ids: null }, checkin: null,
   ideas: {}, // every generated idea that was shown, by id, so history and buttons can find it again
@@ -53,6 +54,8 @@ const fresh = () => ({
 let S;
 try { const d = JSON.parse(localStorage.getItem(KEY)); S = d ? { ...fresh(), ...d, prefs: { ...fresh().prefs, ...d.prefs }, ui: { ...fresh().ui, ...d.ui } } : fresh(); }
 catch { S = fresh(); }
+// Installs from before the server existed had an empty setting, which silently meant "on-device replies only".
+if (!S.prefs.apiV) { S.prefs.apiUrl ||= DEFAULT_API; S.prefs.apiV = 1; }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
   catch { toast('Storage is full — export your data from Settings.'); }
@@ -343,7 +346,7 @@ V.companion = () => {
       <div class="msg assistant">Hi${S.prefs.name ? ' ' + esc(S.prefs.name) : ''}. I am Reclaim's AI companion — not a person, but I am here to listen, help you name what you need, and nudge you back toward real life. What is going on?</div>
       ${msgs.length ? '' : `<div class="chips" style="margin:4px 0">${['I keep doomscrolling', 'I feel lonely', 'I am stressed', 'Give me an idea', 'Help me reach out to someone'].map(t => `<button class="chip" data-a="quickSay" data-v="${esc(t)}">${t}</button>`).join('')}</div>`}
       ${msgs.map(msgHTML).join('')}
-      ${chatPending ? `<div class="msg assistant"><span class="typing-dots" aria-label="Companion is typing"><i></i><i></i><i></i></span></div>` : ''}
+      ${chatPending ? `<div class="msg assistant"><span class="typing-dots" aria-label="Companion is typing"><i></i><i></i><i></i></span>${chatPending.slow ? '<div class="small muted" style="margin-top:6px">Waking up the companion. The free server naps when nobody uses it, so this first reply can take up to a minute.</div>' : ''}</div>` : ''}
     </div>
   </section>
   <div class="composer chat-input ${chatPending ? 'typing' : ''}">
@@ -508,7 +511,7 @@ V.settings = () => `<section class="page full">
   <div class="label">Appearance</div><div class="chips">${[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => `<button class="chip" data-a="theme" data-v="${k}" aria-pressed="${S.prefs.theme === k}">${l}</button>`).join('')}</div>
   <div class="label">Companion server (optional)</div>
   <input class="field" id="setApi" value="${esc(S.prefs.apiUrl)}" placeholder="https://your-reclaim-api.example.com" inputmode="url" autocapitalize="off">
-  <p class="muted small">Leave empty to use on-device replies. A server is your FastAPI backend (POST /v1/chat). No API key is ever stored in the app.</p>
+  <p class="muted small">Your Reclaim server gives real AI replies and ideas. Clear this to use only the simpler on-device replies. No API key is ever stored in the app.</p>
   <button class="btn soft" data-a="testApi">Test connection</button>
   <div class="label">Your data</div>
   <div class="card">
@@ -683,7 +686,8 @@ async function apiFetch(path, body, signal, method = body ? 'POST' : 'GET') {
 }
 async function reply(c, text) {
   const controller = new AbortController();
-  chatPending = { controller };
+  const pending = chatPending = { controller };
+  const slowTimer = setTimeout(() => { if (chatPending === pending) { pending.slow = true; if (S.ui.tab === 'companion' && !screens.length) refresh(); } }, 5000);
   refresh(); scrollTo(0, document.body.scrollHeight);
   const useApi = S.prefs.apiUrl && navigator.onLine;
   try {
@@ -712,6 +716,7 @@ async function reply(c, text) {
     } else c.messages.push({ id: uid(), role: 'assistant', state: 'error', retryText: text, ts: Date.now() });
   }
   c.updated = Date.now();
+  clearTimeout(slowTimer);
   chatPending = null; save();
   if (S.ui.tab === 'companion' && !screens.length) { refresh(); scrollTo({ top: document.body.scrollHeight, behavior: reduced ? 'auto' : 'smooth' }); }
 }
@@ -1353,6 +1358,8 @@ fetch('ideas.json').then(r => r.json()).then(d => { INTERESTS = d.topics; MOODS 
   document.body.insertAdjacentHTML('beforeend', '<p class="empty">Could not load ideas. Check your connection and reopen Reclaim.</p>');
 }).finally(boot);
 function boot() {
+// Wake the server while you look at Today, so the companion is ready by the time you type.
+if (S.prefs.apiUrl && navigator.onLine) apiFetch('/v1/health').catch(() => {});
 $('#app').innerHTML = render(); afterRender('none');
 document.body.classList.add('opening');
 setTimeout(() => {
